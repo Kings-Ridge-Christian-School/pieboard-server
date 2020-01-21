@@ -1,0 +1,37 @@
+body {
+    font-family: 'Open Sans', sans-serif;
+}
+
+form.loginPanel {
+    border: 1px solid gray;
+    border-radius: 5px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 30px;
+    width: 20%;
+}
+
+form.loginPanel input {
+    width: 100%;
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid lightgray;
+    margin-bottom: 20px;
+}
+
+form.loginPanel div.centered {
+    text-align: center
+}
+form.loginPanel input.enter {
+    width: 50%;
+    background-color: gray;
+    color: white;
+    font-size: 100%;
+}
+@media only screen and (max-width: 600px) {
+    form.loginPanel {
+        width: 80%;
+    }
+  }
