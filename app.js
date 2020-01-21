@@ -12,10 +12,11 @@ require('dotenv').config()
 
 var db = new sqlite3.Database('data/data.db');
 db.serialize(() => {
-db.run("CREATE TABLE IF NOT EXISTS devices (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, groups TEXT)");
-db.run("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
-db.run("CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, member INT, expire INT, name TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS devices (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, groups TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, member INT, expire INT, name TEXT)");
 });
+
 
 const ActiveDirectory = require('activedirectory');
 const dir = __dirname + "/static/"
@@ -63,6 +64,16 @@ async function check(cookies) {
     }
 }
 
+
+app.use('/static', express.static('static/resources'))
+
+app.use('/private/:file', async (req, res) => {
+    if (await check(req.signedCookies)) {
+        res.sendFile(dir + "/private/" + req.params.file);
+    }
+});
+
+
 app.get("/login", async (req, res) => {
     if (await check(req.signedCookies)) {
         res.redirect("/")
@@ -104,8 +115,6 @@ app.get("/", async (req, res) => {
         res.redirect("/login");
     }
 });
-
-app.use('/static', express.static('static/resources'))
 
 app.get("/api/devices", async (req, res) => {
     if (await check(req.signedCookies)) {
