@@ -1,4 +1,17 @@
 // not in use until further notice
+const ActiveDirectory = require('activedirectory');
+require('dotenv').config()
+
+
+const config = { url: process.env.AD_URL,
+    baseDN: process.env.AD_BASEDN,
+    username: process.env.AD_USERNAME,
+    password: process.env.AD_PASSWORD }
+    
+const authGroup = process.env.PI_AUTH_GROUP
+var ad = new ActiveDirectory(config);
+
+var tmpUserDB = {}
 
 function inGroup(username) {
     return new Promise(async (resolve) => {
@@ -20,7 +33,7 @@ async function check(cookies) {
     if (cookies.id == null) {
         return false
     } else {
-        if (tmpUserDB[cookies.id].username != null) {
+        if (tmpUserDB[cookies.id] != null) {
             if (await inGroup(tmpUserDB[cookies.id].username)) {
                 return true
             } else {
@@ -32,6 +45,14 @@ async function check(cookies) {
     }
 }
 
+function addNewUser(key, username) {
+    tmpUserDB[key] = {
+        "username": username,
+        "authTime": new Date()
+    }
+}
+
 exports.inGroup = inGroup
 exports.verifyDetails = verifyDetails
 exports.check = check
+exports.addNewUser = addNewUser

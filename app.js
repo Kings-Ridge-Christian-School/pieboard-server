@@ -3,79 +3,28 @@ const fs = require('fs')
 const app = express()
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser')
-const sqlite3 = require('sqlite3').verbose();
 
 app.use(cookieParser("secret"));
-app.use( bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true }));
+app.use(bodyParser.json({limit: '2gb', extended: true}))
+app.use(bodyParser.urlencoded({limit: '2gb', extended: true}))
 require('dotenv').config()
 
-var db = new sqlite3.Database('data/data.db');
-db.serialize(() => {
-    db.run("CREATE TABLE IF NOT EXISTS devices (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, groups TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, member INT, expire INT, name TEXT)");
-});
+const sql = require("./modules/sqlite.js")
+const auth = require("./modules/authenticator.js")
 
-
-const ActiveDirectory = require('activedirectory');
 const dir = __dirname + "/static/"
-
-const config = { url: process.env.AD_URL,
-               baseDN: process.env.AD_BASEDN,
-               username: process.env.AD_USERNAME,
-               password: process.env.AD_PASSWORD }
-
-const port = process.env.PI_PORT
-const authGroup = process.env.PI_AUTH_GROUP
-
-var ad = new ActiveDirectory(config);
-var tmpUserDB = {}
-
-function inGroup(username) {
-    return new Promise(async (resolve) => {
-        ad.isUserMemberOf(username, authGroup, (err, auth) => {
-            auth ? resolve(true) : resolve(false)
-        });
-    });
-}
-
-function verifyDetails(username, password) {
-    return new Promise(async (resolve) => {
-        ad.authenticate(username, password, (err, auth) => {
-            auth ? resolve(true) : resolve(false)
-        });
-    });
-}
-
-async function check(cookies) {
-    if (cookies.id == null) {
-        return false
-    } else {
-        if (tmpUserDB[cookies.id] != null) {
-            if (await inGroup(tmpUserDB[cookies.id].username)) {
-                return true
-            } else {
-                return false
-            }
-        } else {
-            return false
-        }
-    }
-}
-
 
 app.use('/static', express.static('static/resources'))
 
 app.use('/private/:file', async (req, res) => {
-    if (await check(req.signedCookies)) {
+    if (await auth.check(req.signedCookies)) {
         res.sendFile(dir + "/private/" + req.params.file);
     }
 });
 
 
 app.get("/login", async (req, res) => {
-    if (await check(req.signedCookies)) {
+    if (await auth.check(req.signedCookies)) {
         res.redirect("/")
     } else {
         res.sendFile(dir + "login.html")
@@ -83,16 +32,13 @@ app.get("/login", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-    if (await check(req.signedCookies)) {
+    if (await auth.check(req.signedCookies)) {
         res.redirect("/")
     } else {
-        if (await verifyDetails(req.body.username, req.body.password)) {
-            if (await inGroup(req.body.username)) {
+        if (await auth.verifyDetails(req.body.username, req.body.password)) {
+            if (await auth.inGroup(req.body.username)) {
                 let key = Math.random()
-                tmpUserDB[key] = {
-                    "username": req.body.username,
-                    "authTime": new Date()
-                }
+                auth.addNewUser(key, req.body.username);
                 res.cookie('id', key, {signed: true})
                 res.redirect("/")
             } else {
@@ -109,7 +55,7 @@ app.get("/logout", (req, res) => {
     res.redirect("/login")
 });
 app.get("/", async (req, res) => {
-    if (await check(req.signedCookies)) {
+    if (await auth.check(req.signedCookies)) {
         res.sendFile(dir + "index.html")
     } else {
         res.redirect("/login");
@@ -117,36 +63,79 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/api/devices", async (req, res) => {
-    if (await check(req.signedCookies)) {
-        db.all("SELECT name, id FROM devices", (err, list) => {
-            res.send(list)
-        });
+    if (await auth.check(req.signedCookies)) {
+        res.send(await sql.query("SELECT name, id FROM devices"))
     }
 });
 
 app.get("/api/groups", async (req, res) => {
-    if (await check(req.signedCookies)) {
-        db.all("SELECT name, id FROM groups", (err, list) => {
-            res.send(list)
-        });
+    if (await auth.check(req.signedCookies)) {
+        res.send(await sql.query("SELECT name, id FROM groups"))
+    }
+});
+
+
+app.get("/api/device/:device", async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        let data = (await sql.query("SELECT * FROM devices WHERE id = ?", [req.params.device]))[0]
+        data.groups = JSON.parse(data.groups)
+        res.send(data);
     }
 });
 
 app.get("/api/group/:group", async (req, res) => {
-    if (await check(req.signedCookies)) {
-        db.get("SELECT * FROM groups WHERE id = ?", [req.params.group], (err, list) => {
-            res.send(list)
-        });
+    if (await auth.check(req.signedCookies)) {
+        list = (await sql.query("SELECT * FROM groups WHERE id = ?", [req.params.group]))[0]
+        slides = await sql.query("SELECT * FROM slides WHERE member = ?", [req.params.group])
+        res.send({
+            "info": list,
+            "slides": slides
+        })
     }
 });
 
-app.get("/api/device/:device", async (req, res) => {
-    if (await check(req.signedCookies)) {
-        db.get("SELECT * FROM devices WHERE id = ?", [req.params.device], (err, list) => {
-            list.groups = JSON.parse(list.groups)
-            res.send(list)
-        });
+app.post("/api/device/new", async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
+        await sql.query("INSERT INTO devices (id, name, groups) VALUES(?, ?, ?)", [max+1, `Device ${max+1}`, "[]"]);
+        res.send({"res": 0});
     }
 });
 
-app.listen(port, () => console.log(`PieBoard Server Host listening on port ${port}!`))
+app.post("/api/group/new", async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        max = (await sql.query("SELECT MAX(id) AS id_max FROM groups"))[0].id_max;
+        await sql.query("INSERT INTO groups (id, name, expire) VALUES(?, ?, ?)", [max+1, `Group ${max+1}`, 0]);
+        res.send({"res": 0});
+    }
+});
+
+app.post("/api/slide/new", (async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        await sql.query("INSERT INTO slides (member, position, screentime, name, data) VALUES(?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME, req.body.name, req.body.data]);
+        res.send({"res": 0});
+    }
+}));
+
+app.post("/api/device/edit", async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.id])
+        res.send({"res": 0});
+    }
+});
+
+app.post("/api/slide/edit", async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        await sql.query("UPDATE slides SET name = ?, screentime = ? WHERE id=?", [req.body.name, req.body.screentime, req.body.id]) // NOT COMPLETE
+        res.send({"res": 0});
+    }
+});
+
+app.post("/api/group/edit", async (req, res) => {
+    if (await auth.check(req.signedCookies)) {
+        await sql.query("UPDATE groups SET name = ?, expire = ? WHERE id= ?", [req.body.name, req.body.expire, req.body.id])
+        res.send({"res": 0});
+    }
+});
+
+app.listen(process.env.PI_PORT, () => console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`))

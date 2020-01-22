@@ -4,7 +4,7 @@
     <link rel="stylesheet" type="text/css" href="/static/pie.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body class='home'>
+<body class='home' onload="isReady()">
     <div class="container">
         <nav>
             <div id='placeholderNav'>
@@ -15,7 +15,9 @@
             </div>
 
             <div id='groupConfigurationNav'>
-                group
+                <div id="dropBox">
+                    Slides
+                </div>
             </div>
         </nav>
       
@@ -23,21 +25,39 @@
             <div id='placeholder'>
                 Please choose a device or group
             </div>
-            <div id='deviceConfiguration'>
-                device
+            <div id='deviceConfiguration' class='conf'>
+                <h1>Device Configuration</h1>
+                Device ID<br><span id='d_id'>null</span><br><br>
+                Device Name<input type='text' id='d_name' class='text'><br>
+                IP Address<input type='text' id='d_ip' class='text'><br>
+                Groups<br>
+                <div id='d_groups'>
+
+                </div>
+                <button onclick='saveDeviceData()'>Save</button>
             </div>
 
-            <div id='groupConfiguration'>
-                group
+            <div id='groupConfiguration' class='conf'>
+                <h2>Group Settings</h2>
+                Group ID<br><span id='g_id'>null</span><br><br>
+                Name <input type='text' id='g_name' class='text'><br>
+                Expiry Date <input type='date' id="g_e"><br>
+                <input type='checkbox' id="g_e_c"><br>
+                <button onclick='saveGroupData()'>Save</button>
+                <h2>Slide Settings</h2>
+                Slide ID<br><span id="g_s_id">None selected</span><br><br>
+                Name <input type='text' id='g_s_name' class='text'><br>
+                Display Time <input type='number' id='g_s_dt' class='number'><br>
+                <button onclick='saveSlideData()'>Save</button>
             </div>
         </main>
         <aside>
             Devices <button onclick="addDevice()">+</button>
-            <select id='devices' multiple>
-            </select> 
-            Groups <button onclick="addDevice()">+</button>
-            <select id='groups' multiple>
-            </select> 
+            <form id='devices'>
+            </form> 
+            Groups <button onclick="addGroup()">+</button>
+            <form id='groups'>
+            </form> 
         </aside>
       </div>
 </body>
