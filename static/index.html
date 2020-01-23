@@ -27,35 +27,35 @@
             </div>
             <div id='deviceConfiguration' class='conf'>
                 <h1>Device Configuration</h1>
-                Device ID<br><span id='d_id'>null</span><br><br>
-                Device Name<input type='text' id='d_name' class='text'><br>
-                IP Address<input type='text' id='d_ip' class='text'><br>
+                Device ID<br><span id='deviceID'>null</span><br><br>
+                Device Name<input type='text' id='deviceName' class='text'><br>
+                IP Address<input type='text' id='deviceIP' class='text'><br>
                 Groups<br>
-                <div id='d_groups'>
+                <div id='deviceGroupList'>
 
                 </div>
-                <button onclick='saveDeviceData()'>Save</button>
+                <button id='saveDeviceButton'>Save</button>
             </div>
 
             <div id='groupConfiguration' class='conf'>
                 <h2>Group Settings</h2>
-                Group ID<br><span id='g_id'>null</span><br><br>
-                Name <input type='text' id='g_name' class='text'><br>
-                Expiry Date <input type='date' id="g_e"><br>
-                <input type='checkbox' id="g_e_c"><br>
-                <button onclick='saveGroupData()'>Save</button>
+                Group ID<br><span id='groupID'>null</span><br><br>
+                Name <input type='text' id='groupName' class='text'><br>
+                Expiry Date <input type='date' id="groupExpire"><br>
+                <input type='checkbox' id="groupExpireCheckbox"><br>
+                <button id='saveGroupButton'>Save</button>
                 <h2>Slide Settings</h2>
-                Slide ID<br><span id="g_s_id">None selected</span><br><br>
-                Name <input type='text' id='g_s_name' class='text'><br>
-                Display Time <input type='number' id='g_s_dt' class='number'><br>
-                <button onclick='saveSlideData()'>Save</button>
+                Slide ID<br><span id="groupSlideID">None selected</span><br><br>
+                Name <input type='text' id='groupSlideName' class='text'><br>
+                Display Time <input type='number' id='groupSlideDisplayTime' class='number'><br>
+                <button id='saveSlideButton'>Save</button>
             </div>
         </main>
         <aside>
-            Devices <button onclick="addDevice()">+</button>
+            Devices <button id='addDeviceButton'>+</button>
             <form id='devices'>
             </form> 
-            Groups <button onclick="addGroup()">+</button>
+            Groups <button id='addGroupButton'>+</button>
             <form id='groups'>
             </form> 
         </aside>

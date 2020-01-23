@@ -86,19 +86,19 @@ aside select {
     height: 200px;
 }
 
-main div#deviceConfiguration {
+#deviceConfiguration {
     display: none;
 }
 
-main div#groupConfiguration {
+#groupConfiguration {
     display: none;
 }
 
-main div#placeholder {
+#placeholder {
     display: none;
 }
 
-div#dropBox {
+#dropBox {
     width: 100%;
     height: 100%;
     text-align: center;

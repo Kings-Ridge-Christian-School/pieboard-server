@@ -29,7 +29,7 @@ function verifyDetails(username, password) {
     });
 }
 
-async function check(cookies) {
+async function isVerified(cookies) {
     if (cookies.id == null) {
         return false
     } else {
@@ -54,5 +54,5 @@ function addNewUser(key, username) {
 
 exports.inGroup = inGroup
 exports.verifyDetails = verifyDetails
-exports.check = check
+exports.isVerified = isVerified
 exports.addNewUser = addNewUser
