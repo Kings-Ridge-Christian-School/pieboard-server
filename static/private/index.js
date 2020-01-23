@@ -59,8 +59,6 @@ async function addGroup() {
     let res = await post("/api/group/new", {});
     if (res.res == 0) {
         init_navigation();
-    } else {
-
     }
 }
 
@@ -131,17 +129,27 @@ async function init_navigation() {
         let option = document.createElement("input");
         option.type = "radio"
         option.id = "dm_" + devices[device].id
+        option.addEventListener("click", (elem) => {
+            deselectRadio(devicedom)
+            elem.target.checked = true
+        });
         deviceCache[option.id] = devices[device].name
         devicedom.appendChild(option);
         devicedom.appendChild(document.createTextNode(devices[device].name));
+        devicedom.appendChild(document.createElement("br"))
     }
     for (group in groups) {
         let option = document.createElement("input")
         option.type = "radio"
         option.id = "gm_" + groups[group].id
-        groupCache[option.id] = groups[group].name
+        option.addEventListener("click", (elem) => {
+            deselectRadio(groupdom)
+            elem.target.checked = true
+        });
+        groupCache[groups[group].id] = groups[group].name
         groupdom.appendChild(option);
         groupdom.appendChild(document.createTextNode(groups[group].name));
+        groupdom.appendChild(document.createElement("br"))
     }
 }
 
@@ -169,6 +177,7 @@ async function processDeviceChange() {
     document.getElementById("deviceID").innerHTML = id
     document.getElementById("deviceIP").value = data.ip;
     document.getElementById("deviceName").value = data.name;
+    document.getElementById("deviceGroupList").innerHTML = ""
     for (group in groupCache) {
         let option = document.createElement("input");
         option.type = "checkbox"
@@ -179,7 +188,6 @@ async function processDeviceChange() {
         }
         let option2 = document.createElement("span")
         option2.innerHTML = groupCache[group]
-        document.getElementById("deviceGroupList").innerHTML = ""
         document.getElementById("deviceGroupList").appendChild(option);
         document.getElementById("deviceGroupList").appendChild(option2);
         document.getElementById("deviceGroupList").appendChild(document.createElement("br"));
@@ -232,7 +240,7 @@ async function saveDeviceData() {
     let groups = []
     for (group in groupCache) {
         if (document.getElementById("gid_" + group).checked) {
-            groups.push(group);
+            groups.push(group.replace("gm_", ""));
         }
     }
     await post("/api/device/edit", {
@@ -242,7 +250,7 @@ async function saveDeviceData() {
         "groups": groups
     });
     processDeviceChange()
-    init_navigation()
+    await init_navigation()
     document.getElementById("dm_" + document.getElementById("deviceID").innerHTML).checked = true
 }
 
@@ -257,7 +265,7 @@ async function saveGroupData() {
         "name": document.getElementById("groupName").value,
         "expire": time
     });
-    init_navigation()
+    await init_navigation()
     document.getElementById("gm_" + document.getElementById("groupID").innerHTML).checked = true
 }
 async function saveSlideData() {
@@ -278,6 +286,6 @@ async function isReady() {
     document.getElementById("addDeviceButton").addEventListener("click", async => {addDevice()});
     document.getElementById("addGroupButton").addEventListener("click", async => {addGroup()});
 
-    init_navigation(); 
+    await init_navigation(); 
     setState(0);
 }

@@ -3,7 +3,7 @@ const fs = require('fs')
 const app = express()
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser')
-
+const md5 = require('md5')
 app.use(cookieParser("secret"));
 app.use(bodyParser.json({limit: '2gb', extended: true}))
 app.use(bodyParser.urlencoded({limit: '2gb', extended: true}))
@@ -11,6 +11,7 @@ require('dotenv').config()
 
 const sql = require("./modules/sqlite.js")
 const auth = require("./modules/authenticator.js")
+const pusher = require("./modules/pusher.js")
 
 const dir = __dirname + "/static/"
 
@@ -93,7 +94,7 @@ app.get("/api/group/:group", async (req, res) => {
         list = (await sql.query("SELECT * FROM groups WHERE id = ?", [req.params.group]))
         if (list.length > 0) {
             list = list[0]
-            slides = await sql.query("SELECT * FROM slides WHERE member = ?", [req.params.group])
+            let slides = await sql.query("SELECT * FROM slides WHERE member = ?", [req.params.group])
             res.send({
                 "info": list,
                 "slides": slides
@@ -106,7 +107,7 @@ app.get("/api/group/:group", async (req, res) => {
 
 app.post("/api/device/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
+        let max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
         await sql.query("INSERT INTO devices (id, name, groups) VALUES(?, ?, ?)", [max+1, `Device ${max+1}`, "[]"]);
         res.send({"res": 0});
     }
@@ -114,7 +115,7 @@ app.post("/api/device/new", async (req, res) => {
 
 app.post("/api/group/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        max = (await sql.query("SELECT MAX(id) AS id_max FROM groups"))[0].id_max;
+        let max = (await sql.query("SELECT MAX(id) AS id_max FROM groups"))[0].id_max;
         await sql.query("INSERT INTO groups (id, name, expire) VALUES(?, ?, ?)", [max+1, `Group ${max+1}`, 0]);
         res.send({"res": 0});
     }
@@ -122,7 +123,8 @@ app.post("/api/group/new", async (req, res) => {
 
 app.post("/api/slide/new", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("INSERT INTO slides (member, position, screentime, name, data) VALUES(?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME, req.body.name, req.body.data]);
+        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data) VALUES(?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME, req.body.name, md5(req.body.data), req.body.data]);
+        pusher.updateDevicesInGroup(req.body.member);
         res.send({"res": 0});
     }
 }));
@@ -130,6 +132,7 @@ app.post("/api/slide/new", (async (req, res) => {
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.id])
+        pusher.pushManifest(req.body.id)
         res.send({"res": 0});
     }
 });
@@ -137,6 +140,7 @@ app.post("/api/device/edit", async (req, res) => {
 app.post("/api/slide/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE slides SET name = ?, screentime = ? WHERE id=?", [req.body.name, req.body.screentime, req.body.id]) // NOT COMPLETE
+        pusher.updateDevicesInGroup(await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))
         res.send({"res": 0});
     }
 });
@@ -144,8 +148,26 @@ app.post("/api/slide/edit", async (req, res) => {
 app.post("/api/group/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE groups SET name = ?, expire = ? WHERE id= ?", [req.body.name, req.body.expire, req.body.id])
+        pusher.updateDevicesInGroup(req.body.id)
         res.send({"res": 0});
     }
 });
+
+app.get("/api/slide/get/:id", async (req, res) => {
+    if (true) { // device authentication
+        let content = await sql.query("SELECT data FROM slides WHERE id = ?", [req.params.id])
+        if (content.length > 0) {
+            res.send(content[0].data);
+        } else {
+            res.send({"res": 1})
+        }
+    }
+});
+
+app.get("/dapi/refresh/:id", async (req, res) => {
+    pusher.pushManifest(req.params.id)
+    res.send({"res": 0})
+});
+
 
 app.listen(process.env.PI_PORT, () => console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`))
