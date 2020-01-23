@@ -140,7 +140,7 @@ app.post("/api/device/edit", async (req, res) => {
 app.post("/api/slide/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE slides SET name = ?, screentime = ? WHERE id=?", [req.body.name, req.body.screentime, req.body.id]) // NOT COMPLETE
-        pusher.updateDevicesInGroup(await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))
+        pusher.updateDevicesInGroup((await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))[0].member)
         res.send({"res": 0});
     }
 });
@@ -167,6 +167,15 @@ app.get("/api/slide/get/:id", async (req, res) => {
 app.get("/dapi/refresh/:id", async (req, res) => {
     pusher.pushManifest(req.params.id)
     res.send({"res": 0})
+});
+
+app.get("/dapi/getnonce/:id", async (req, res) => {
+    let info = await sql.query("SELECT manifest FROM devices WHERE id = ?", [req.params.id])
+    if (info[0].manifest != null) {
+        res.send({"nonce": info[0].manifest})
+    } else {
+        res.send({"nonce": null})
+    }
 });
 
 

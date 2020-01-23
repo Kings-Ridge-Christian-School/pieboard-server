@@ -71,9 +71,9 @@ async function pushManifest(id) {
         await sql.query("UPDATE devices SET manifest = ? WHERE id = ?", [nonce, id]);
         try {
              await post("http://" + data[0].ip + ":3030/manifest", manifest);
-             console.log("Pushed new manifest");
+             console.log("Pushed updated manifest to " + id);
         } catch(e)  {
-            console.log("Device offline!");
+            console.log(id + " is offline!");
         }
     } else {
         return false
@@ -84,7 +84,7 @@ async function updateDevicesInGroup(group) {
     console.log(group);
     let devices = await sql.query("SELECT id, groups FROM devices")
     for (device in devices) {
-        if (JSON.parse(devices[device].groups).includes(group)) {
+        if (JSON.parse(devices[device].groups).includes(group + "")) {
             console.log(group, JSON.parse(devices[device].groups));
             pushManifest(devices[device].id)
         }
