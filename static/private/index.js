@@ -6,7 +6,13 @@ let state, current, currentGroup, currentDevice, slideCache, deviceCache, groupC
 function get(url) {
     return new Promise(async (resolve) => {
         let response = await fetch(url);
-        resolve(response.json());
+        let json = await response.json()
+        if (json.error) {
+            if (json.error == "NotVerified") json.error = "Not verified, try reloading the page"
+            alert("Error: " + json.error);
+        } else {
+            resolve(json);
+        }
     });
 }
 
