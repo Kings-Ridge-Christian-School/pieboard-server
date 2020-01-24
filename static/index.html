@@ -39,7 +39,7 @@
                 IP Address<input type='text' id='deviceIP' class='text'>
                 <i>Note: this does not change the device's IP, it changes what IP the server tries to access the device!</i><br>
                 Port<input type='text' id='devicePort' class='text'>
-                <i>Note: this does not change the device's PORT, it changes what port the server tries to access the device!</i><<br><br>
+                <i>Note: this does not change the device's PORT, it changes what port the server tries to access the device!</i><br><br>
                 Authentication<input type='password' id='deviceAuth' class='text'>
                 <i>Note: this does not change the device's authentication, it changes what code the server uses to authenticate with the device!</i><br><br>
 
@@ -57,14 +57,14 @@
                 Slide ID<br><span id="groupSlideID">None selected</span><br><br>
                 Name <input type='text' id='groupSlideName' class='text'><br>
                 Display Time <input type='number' id='groupSlideDisplayTime' class='number'><br>
-                <button id='saveSlideButton'>Save</button><span class='status' id="saveSlideStatus">&nbsp;</span>
+                <button id='saveSlideButton'>Save</button><button id='deleteSlideButton'>Delete Slide</button><span class='status' id="saveSlideStatus">&nbsp;</span>
             </div>
         </main>
         <aside>
-            Devices <button id='addDeviceButton'>+</button><span class='status' id="addDeviceStatus">&nbsp;</span>
+            Devices <button id='addDeviceButton'>+</button><button id='deleteDeviceButton'>-</button><span class='status' id="addDeviceStatus">&nbsp;</span>
             <form id='devices'>
             </form> 
-            Groups <button id='addGroupButton'>+</button><span class='status' id="addGroupStatus">&nbsp;</span>
+            Groups <button id='addGroupButton'>+</button><button id='deleteGroupButton'>-</button><span class='status' id="addGroupStatus">&nbsp;</span>
             <form id='groups'>
             </form> 
         </aside>

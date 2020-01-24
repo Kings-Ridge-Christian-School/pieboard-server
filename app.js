@@ -188,12 +188,62 @@ app.get("/api/device/refresh/:id", async (req, res) => {
     res.send({"res": 0})
 });
 
-app.get("/api/device/getnonce/:id", async (req, res) => {
+app.get("/api/device/getnonce", async (req, res) => {
     let info = await sql.query("SELECT manifest FROM devices WHERE id = ?", [req.params.id])
     if (info[0].manifest != null) {
         res.send({"nonce": info[0].manifest})
     } else {
         res.send({"nonce": null})
+    }
+});
+
+app.post("/api/slide/delete", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        let group =  await sql.query("SELECT member FROM slides WHERE id= ?", [req.body.id])
+        await sql.query("DELETE FROM slides WHERE id = ?", [req.body.id]);
+        pusher.updateDevicesInGroup(group[0].member);
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+});
+
+function removeFromArray(arr, item) {
+    for( var i = 0; i < arr.length; i++){ 
+        if ( arr[i] === item) {
+          arr.splice(i, 1); 
+          i--;
+        }
+     }
+     return arr
+}
+
+app.post("/api/group/delete", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        await sql.query("DELETE FROM groups WHERE id = ?", [req.body.id])
+        await sql.query("DELETE FROM slides WHERE member = ?", [req.body.id])
+        let devices = await sql.query('SELECT id, groups FROM devices');
+        for (device in devices) {
+            let groups = JSON.parse(devices[device].groups)
+            if (groups.includes(req.body.id)) {
+                groups = removeFromArray(groups, req.body.id);
+                await sql.query("UPDATE devices SET groups = ? WHERE id = ?", [JSON.stringify(groups), devices[device].id]);
+                await pusher.pushManifest(devices[device].id);
+            }
+        }
+        pusher.updateDevicesInGroup(req.body.id)
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+});
+
+app.post("/api/device/delete", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        await sql.query("DELETE FROM devices WHERE id = ?", [req.body.id])
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
     }
 });
 

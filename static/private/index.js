@@ -89,6 +89,39 @@ async function addGroup() {
     }
 }
 
+async function deleteDevice() {
+    let device = findRadio(devicedom).id.replace("dm_", "");
+    if (confirm("Are you sure you want to delete device " + device + "? This is irreversable!")) {
+        res = await postWithResult("addDeviceStatus", "/api/device/delete", {"id": device});
+        if (res) {
+            setState(0);
+            init_navigation();
+        }
+    }
+}
+
+async function deleteGroup() {
+    let group = findRadio(groupdom).id.replace("gm_", "");
+    if (confirm("Are you sure you want to delete group " + group + "? It's slides will be deleted as well. This is irreversable!")) {
+        res = await postWithResult("addGroupStatus", "/api/group/delete", {"id": group});
+        if (res) {
+            setState(0);
+            init_navigation();
+        }
+    }
+}
+
+async function deleteSlide() {
+    let slide = document.getElementById("groupSlideID").innerHTML
+    if (confirm("Are you sure you want to delete slide " + slide + "? This is irreversable!")) {
+        res = await postWithResult("addGroupStatus", "/api/slide/delete", {"id": slide});
+        if (res) {
+            processGroupChange();
+            init_navigation();
+        }
+    }
+}
+
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropArea.addEventListener(eventName, preventDefaults, false);
 })
@@ -208,6 +241,7 @@ function setImage(img) {
     document.getElementById("groupSlideName").disabled = false
     document.getElementById("groupSlideDisplayTime").disabled = false
     document.getElementById("saveSlideButton").disabled = false
+    document.getElementById("deleteSlideButton").disabled = false
 }
 
 async function processDeviceChange() {
@@ -296,6 +330,7 @@ async function processGroupChange() {
         document.getElementById("groupSlideName").disabled = true
         document.getElementById("groupSlideDisplayTime").disabled = true
         document.getElementById("saveSlideButton").disabled = true
+        document.getElementById("deleteSlideButton").disabled = true
         setState(2);
 }
 
@@ -351,7 +386,9 @@ async function isReady() {
     document.getElementById("saveSlideButton").addEventListener("click", async => {saveSlideData()});
     document.getElementById("addDeviceButton").addEventListener("click", async => {addDevice()});
     document.getElementById("addGroupButton").addEventListener("click", async => {addGroup()});
-
+    document.getElementById("deleteDeviceButton").addEventListener("click", async => {deleteDevice()});
+    document.getElementById("deleteGroupButton").addEventListener("click", async => {deleteGroup()});
+    document.getElementById("deleteSlideButton").addEventListener("click", async => {deleteSlide()});
     await init_navigation(); 
     setState(0);
 }
