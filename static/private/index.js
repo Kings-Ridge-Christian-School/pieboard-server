@@ -21,18 +21,23 @@ function post(url, data) {
     });
 }
 
-async function getWithResult(element, url) {
+async function postWithResult(element, url, data) {
+    element = document.getElementById(element);
     element.innerHTML = "⌛"
     try {
-        let result = await get(url);
+        let result = await post(url, data);
         if (result.error == false) {
             element.innerHTML = "✅"
-            setTimeout(() => {element.innerHTML = ""}, 2000);
+            setTimeout(() => {element.innerHTML = "&nbsp;"}, 2000);
+            return true
         } else {
+            console.log(result);
             element.innerHTML = "❌"
+            return false
         }
     } catch(e) {
         element.innerHTML = "❌"
+        return false
     }
 }
 
@@ -65,15 +70,15 @@ function setState(type) {
 }
 
 async function addDevice() {
-    let res = await post("/api/device/new", {});
-    if (res.res == 0) {
+    let res = await postWithResult("addDeviceStatus", "/api/device/new", {});
+    if (res) {
         init_navigation();
     }
 }
 
 async function addGroup() {
-    let res = await post("/api/group/new", {});
-    if (res.res == 0) {
+    let res = await postWithResult("addGroupStatus", "/api/group/new", {});
+    if (res) {
         init_navigation();
     }
 }
@@ -119,7 +124,7 @@ async function handleDrop(e) {
         let file = files[file_number]
         if (file.type != null) { 
             if (file.type.startsWith("image")) {
-                await post("/api/slide/new", {
+                await postWithResult("addSlideStatus", "/api/slide/new", {
                     "member": current,
                     "position": -1,
                     "name": file.name,
@@ -205,6 +210,8 @@ async function processDeviceChange() {
     let data = await get("/api/device/" + id);
     if (data.lastSuccess == 0) {
         document.getElementById("lastCommunication").innerHTML = "❌ failed"
+    } else if (data.lastSuccess == null) {
+        document.getElementById("lastCommunication").innerHTML = "No communication"
     } else {
         document.getElementById("lastCommunication").innerHTML = "✅ " + new Date(data.lastSuccess).toLocaleString();
     }
@@ -239,7 +246,7 @@ async function processGroupChange() {
         let slides = data.slides
         slideCache = {}
         current = id;
-        dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p>"
+        dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p><span class='status' id='addSlideStatus'></span>"
         for (slide in slides) {
             slideCache[slides[slide].id] = slides[slide]
             let figure = document.createElement("figure");
@@ -290,7 +297,7 @@ async function saveDeviceData() {
             groups.push(group.replace("gm_", ""));
         }
     }
-    await post("/api/device/edit", {
+    await postWithResult("saveDeviceStatus", "/api/device/edit", {
         "id": document.getElementById("deviceID").innerHTML,
         "name": document.getElementById("deviceName").value,
         "ip": document.getElementById("deviceIP").value,
@@ -309,7 +316,7 @@ async function saveGroupData() {
         time = new Date(document.getElementById("groupExpireDate").value + " " + document.getElementById("groupExpireTime").value)
         
         }
-    await post("/api/group/edit", {
+    await postWithResult("saveGroupStatus", "/api/group/edit", {
         "id": document.getElementById("groupID").innerHTML,
         "name": document.getElementById("groupName").value,
         "expire": time
@@ -318,7 +325,7 @@ async function saveGroupData() {
     document.getElementById("gm_" + document.getElementById("groupID").innerHTML).checked = true
 }
 async function saveSlideData() {
-    await post("/api/slide/edit", {
+    await postWithResult("saveSlideStatus", "/api/slide/edit", {
         "id": document.getElementById("groupSlideID").innerHTML,
         "name": document.getElementById("groupSlideName").value,
         "screentime": document.getElementById("groupSlideDisplayTime").value

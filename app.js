@@ -84,7 +84,7 @@ app.get("/api/device/:device", async (req, res) => {
             data.groups = JSON.parse(data.groups)
             res.send(data);
         } else {
-            res.send({"res": 1})
+            res.send({"error": true})
         }
     }
 });
@@ -100,7 +100,7 @@ app.get("/api/group/:group", async (req, res) => {
                 "slides": slides
             })
         } else {
-            res.send({"res": 1})
+            res.send({"error": true})
         }
     }
 });
@@ -109,7 +109,7 @@ app.post("/api/device/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         let max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
         await sql.query("INSERT INTO devices (id, name, groups) VALUES(?, ?, ?)", [max+1, `Device ${max+1}`, "[]"]);
-        res.send({"res": 0});
+        res.send({"error": false});
     }
 });
 
@@ -117,7 +117,7 @@ app.post("/api/group/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         let max = (await sql.query("SELECT MAX(id) AS id_max FROM groups"))[0].id_max;
         await sql.query("INSERT INTO groups (id, name, expire) VALUES(?, ?, ?)", [max+1, `Group ${max+1}`, 0]);
-        res.send({"res": 0});
+        res.send({"error": false});
     }
 });
 
@@ -125,14 +125,14 @@ app.post("/api/slide/new", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data) VALUES(?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME, req.body.name, md5(req.body.data), req.body.data]);
         pusher.updateDevicesInGroup(req.body.member);
-        res.send({"res": 0});
+        res.send({"error": false});
     }
 }));
 
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ?, authentication = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.authentication, req.body.id])
-        res.send({"error": await pusher.pushManifest(req.body.id)});
+        res.send({"error": false});
     }
 });
 
@@ -140,7 +140,7 @@ app.post("/api/slide/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE slides SET name = ?, screentime = ? WHERE id=?", [req.body.name, req.body.screentime, req.body.id]) // NOT COMPLETE
         pusher.updateDevicesInGroup((await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))[0].member)
-        res.send({"res": 0});
+        res.send({"error": false});
     }
 });
 
@@ -148,7 +148,7 @@ app.post("/api/group/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE groups SET name = ?, expire = ? WHERE id= ?", [req.body.name, req.body.expire, req.body.id])
         pusher.updateDevicesInGroup(req.body.id)
-        res.send({"res": 0});
+        res.send({"error": false});
     }
 });
 

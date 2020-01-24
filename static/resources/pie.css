@@ -149,3 +149,7 @@ input:disabled {
 #groupExpireCheckbox {
     display: inline;
 }
+
+.status {
+    padding-left: 10px;
+}
