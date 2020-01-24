@@ -131,9 +131,8 @@ app.post("/api/slide/new", (async (req, res) => {
 
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.id])
-        pusher.pushManifest(req.body.id)
-        res.send({"res": 0});
+        await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ?, authentication = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.authentication, req.body.id])
+        res.send({"error": await pusher.pushManifest(req.body.id)});
     }
 });
 

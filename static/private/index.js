@@ -126,6 +126,7 @@ async function init_navigation() {
     groupCache = {}
     deviceCache = {}
     for (device in devices) {
+        let container = document.createElement("div");
         let option = document.createElement("input");
         option.type = "radio"
         option.id = "dm_" + devices[device].id
@@ -134,11 +135,16 @@ async function init_navigation() {
             elem.target.checked = true
         });
         deviceCache[option.id] = devices[device].name
-        devicedom.appendChild(option);
-        devicedom.appendChild(document.createTextNode(devices[device].name));
-        devicedom.appendChild(document.createElement("br"))
+        let radioName = document.createElement("label");
+        radioName.htmlFor = "dm_" + devices[device].id
+
+        radioName.appendChild(document.createTextNode(devices[device].name))
+        container.appendChild(option);
+        container.appendChild(radioName)
+        devicedom.appendChild(container);
     }
     for (group in groups) {
+        let container = document.createElement("div");
         let option = document.createElement("input")
         option.type = "radio"
         option.id = "gm_" + groups[group].id
@@ -147,9 +153,14 @@ async function init_navigation() {
             elem.target.checked = true
         });
         groupCache[groups[group].id] = groups[group].name
-        groupdom.appendChild(option);
-        groupdom.appendChild(document.createTextNode(groups[group].name));
-        groupdom.appendChild(document.createElement("br"))
+
+        let radioName = document.createElement("label");
+        radioName.htmlFor = "gm_" + groups[group].id
+
+        radioName.appendChild(document.createTextNode(groups[group].name))
+        container.appendChild(option);
+        container.appendChild(radioName)
+        groupdom.appendChild(container);
     }
 }
 
@@ -177,8 +188,10 @@ async function processDeviceChange() {
     document.getElementById("deviceID").innerHTML = id
     document.getElementById("deviceIP").value = data.ip;
     document.getElementById("deviceName").value = data.name;
+    document.getElementById("deviceAuth").value = data.authentication;
     document.getElementById("deviceGroupList").innerHTML = ""
     for (group in groupCache) {
+        let container = document.createElement("div")
         let option = document.createElement("input");
         option.type = "checkbox"
         option.className = "g_select"
@@ -186,11 +199,12 @@ async function processDeviceChange() {
         if (data.groups.includes(group)) {
             option.checked = 1
         }
-        let option2 = document.createElement("span")
-        option2.innerHTML = groupCache[group]
-        document.getElementById("deviceGroupList").appendChild(option);
-        document.getElementById("deviceGroupList").appendChild(option2);
-        document.getElementById("deviceGroupList").appendChild(document.createElement("br"));
+        let optionLabel = document.createElement("label");
+        optionLabel.htmlFor = "gid_" + group
+        optionLabel.appendChild(document.createTextNode(groupCache[group]));
+        container.appendChild(option);
+        container.appendChild(optionLabel);
+        document.getElementById("deviceGroupList").appendChild(container);
     }
     setState(1)
 }
@@ -247,6 +261,7 @@ async function saveDeviceData() {
         "id": document.getElementById("deviceID").innerHTML,
         "name": document.getElementById("deviceName").value,
         "ip": document.getElementById("deviceIP").value,
+        "authentication": document.getElementById("deviceAuth").value,
         "groups": groups
     });
     processDeviceChange()

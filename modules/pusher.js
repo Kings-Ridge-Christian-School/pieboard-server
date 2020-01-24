@@ -24,10 +24,10 @@ function post(url, data) {
     });
 }
 
-function generateManifestFromData(slides, groups, id) {
+function generateManifestFromData(slides, groups, id, auth) {
     let manifest = {
         "time": new Date(),
-        "auth": "IAmWhoISayIAm",
+        "auth": auth,
         "address": process.env.IP,
         "id": id,
         "data": []
@@ -44,9 +44,9 @@ function generateManifestFromData(slides, groups, id) {
 }
 
 async function generateManifestFromID(id) {
-    let groups = await sql.query("SELECT groups FROM devices WHERE id = ?", [id])
-    if (groups.length > 0) {
-        groups = JSON.parse(groups[0].groups)
+    let device = await sql.query("SELECT groups, authentication FROM devices WHERE id = ?", [id])
+    if (device.length > 0) {
+        groups = JSON.parse(device[0].groups)
         let groupList = {}
         let slides = []
         for (group in groups) {
@@ -56,7 +56,7 @@ async function generateManifestFromID(id) {
                 slides.push(slideGroup[slide])
             }
         }
-        return generateManifestFromData(slides, groupList, id)
+        return generateManifestFromData(slides, groupList, id, device[0].authentication);
     } else {
         return false
     }
@@ -72,8 +72,10 @@ async function pushManifest(id) {
         try {
              await post("http://" + data[0].ip + ":3030/manifest", manifest);
              console.log("Pushed updated manifest to " + id);
+             return true
         } catch(e)  {
             console.log(id + " is offline!");
+            return false
         }
     } else {
         return false
@@ -81,11 +83,9 @@ async function pushManifest(id) {
 }
 
 async function updateDevicesInGroup(group) {
-    console.log(group);
     let devices = await sql.query("SELECT id, groups FROM devices")
     for (device in devices) {
         if (JSON.parse(devices[device].groups).includes(group + "")) {
-            console.log(group, JSON.parse(devices[device].groups));
             pushManifest(devices[device].id)
         }
     }

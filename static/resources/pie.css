@@ -139,3 +139,7 @@ div.conf input.number {
 div.conf input.g_select {
     display: inline;
 }
+
+label {
+    display: inline-block;
+}
