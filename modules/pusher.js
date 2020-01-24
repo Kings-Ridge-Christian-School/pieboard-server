@@ -72,9 +72,11 @@ async function pushManifest(id) {
         try {
              await post("http://" + data[0].ip + ":3030/manifest", manifest);
              console.log("Pushed updated manifest to " + id);
+             await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), id])
              return true
         } catch(e)  {
             console.log(id + " is offline!");
+            await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [0, id])
             return false
         }
     } else {

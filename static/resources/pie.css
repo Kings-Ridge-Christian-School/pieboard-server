@@ -63,11 +63,11 @@ nav {
     border-right: 1px solid gray;
     overflow:scroll;
     padding: 5px;
+    overflow-x: hidden;
 }
   
 main {
     grid-area: content;
-    
     overflow:scroll;
 }
 
@@ -76,6 +76,7 @@ aside {
     margin-right: 0.5rem;
     border-left: 1px solid gray;
     overflow:scroll;
+    overflow-x: hidden;
     padding: 5px;
 }
 
@@ -110,7 +111,8 @@ figure {
     border: 5px solid lightgray;
     border-radius: 3px;
     background-color: lightgray;
-    text-align: center
+    text-align: center;
+    overflow: hidden;
 
 }
 
@@ -140,6 +142,10 @@ div.conf input.g_select {
     display: inline;
 }
 
-label {
-    display: inline-block;
+input:disabled {
+    background-color: lightgray;
+}
+
+#groupExpireCheckbox {
+    display: inline;
 }

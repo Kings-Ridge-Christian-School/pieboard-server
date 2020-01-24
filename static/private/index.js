@@ -9,6 +9,7 @@ function get(url) {
         resolve(response.json());
     });
 }
+
 function post(url, data) {
     return new Promise(async (resolve) => {
         let response = await fetch(url, {
@@ -18,6 +19,21 @@ function post(url, data) {
         });
         resolve(response.json());
     });
+}
+
+async function getWithResult(element, url) {
+    element.innerHTML = "⌛"
+    try {
+        let result = await get(url);
+        if (result.error == false) {
+            element.innerHTML = "✅"
+            setTimeout(() => {element.innerHTML = ""}, 2000);
+        } else {
+            element.innerHTML = "❌"
+        }
+    } catch(e) {
+        element.innerHTML = "❌"
+    }
 }
 
 function setState(type) {
@@ -165,7 +181,6 @@ async function init_navigation() {
 }
 
 function setImage(img) {
-    console.log(img.target.id);
     images = document.getElementsByClassName("g_fig");
     for (image in images) {
         images[image].className = "g_fig"
@@ -179,12 +194,20 @@ function setImage(img) {
     document.getElementById("groupSlideID").innerHTML = id
     document.getElementById("groupSlideName").value = slideCache[id].name
     document.getElementById("groupSlideDisplayTime").value = slideCache[id].screentime
+    document.getElementById("groupSlideName").disabled = false
+    document.getElementById("groupSlideDisplayTime").disabled = false
+    document.getElementById("saveSlideButton").disabled = false
 }
 
 async function processDeviceChange() {
     deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
     let data = await get("/api/device/" + id);
+    if (data.lastSuccess == 0) {
+        document.getElementById("lastCommunication").innerHTML = "❌ failed"
+    } else {
+        document.getElementById("lastCommunication").innerHTML = "✅ " + new Date(data.lastSuccess).toLocaleString();
+    }
     document.getElementById("deviceID").innerHTML = id
     document.getElementById("deviceIP").value = data.ip;
     document.getElementById("deviceName").value = data.name;
@@ -216,8 +239,7 @@ async function processGroupChange() {
         let slides = data.slides
         slideCache = {}
         current = id;
-        console.log(data);
-        dropBox.innerHTML = "Drag images here"
+        dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p>"
         for (slide in slides) {
             slideCache[slides[slide].id] = slides[slide]
             let figure = document.createElement("figure");
@@ -238,16 +260,27 @@ async function processGroupChange() {
         document.getElementById("groupID").innerHTML = current
         document.getElementById("groupName").value = data.info.name
         if (data.info.expire == "0") {
-            document.getElementById("groupExpire").disabled = true
+            document.getElementById("groupExpireDate").disabled = true
+            document.getElementById("groupExpireTime").disabled = true
             document.getElementById("groupExpireCheckbox").checked = true
         } else {
-            document.getElementById("groupExpire").value = data.info.expire
+            let expire = new Date(data.info.expire)
+            document.getElementById("groupExpireDate").value = expire.getFullYear() + "-" + (expire.getMonth()+1).toString().padStart(2, '0') + "-" + expire.getDate().toString().padStart(2, '0')
+            document.getElementById("groupExpireTime").value = expire.getHours().toString().padStart(2, '0') + ":" + expire.getMinutes().toString().padStart(2, '0') + ":" + expire.getSeconds().toString().padStart(2, '0')
         }
         document.getElementById("groupExpireCheckbox").addEventListener("change", () => {
 
-            document.getElementById("groupExpire").disabled = document.getElementById("groupExpireCheckbox").checked
+            document.getElementById("groupExpireDate").disabled = document.getElementById("groupExpireCheckbox").checked
+            document.getElementById("groupExpireTime").disabled = document.getElementById("groupExpireCheckbox").checked
         });
-        setState(2)
+        document.getElementById("groupSlideID").innerHTML = "None selected"
+        document.getElementById("groupSlideName").value = ""
+        document.getElementById("groupSlideDisplayTime").value = ""
+
+        document.getElementById("groupSlideName").disabled = true
+        document.getElementById("groupSlideDisplayTime").disabled = true
+        document.getElementById("saveSlideButton").disabled = true
+        setState(2);
 }
 
 async function saveDeviceData() {
@@ -273,8 +306,9 @@ async function saveGroupData() {
     if (document.getElementById("groupExpireCheckbox").checked) {
         time = 0
     } else {
-        time = document.getElementById("groupExpire").value
-    }
+        time = new Date(document.getElementById("groupExpireDate").value + " " + document.getElementById("groupExpireTime").value)
+        
+        }
     await post("/api/group/edit", {
         "id": document.getElementById("groupID").innerHTML,
         "name": document.getElementById("groupName").value,

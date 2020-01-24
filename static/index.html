@@ -11,7 +11,9 @@
                 Please choose a device or group
             </div>
             <div id='deviceConfigurationNav'>
-                device
+                <h2>Device Info</h2>
+                <b>Last Communication:</b><br>
+                <div id='lastCommunication'>null</div>
             </div>
 
             <div id='groupConfigurationNav'>
@@ -35,7 +37,6 @@
                 <i>Note: this does not change the device's authentication, it changes what code the server uses to authenticate with the device!</i><br><br>
                 Groups<br>
                 <div id='deviceGroupList'>
-
                 </div>
                 <button id='saveDeviceButton'>Save</button>
             </div>
@@ -44,8 +45,9 @@
                 <h2>Group Settings</h2>
                 Group ID<br><span id='groupID'>null</span><br><br>
                 Name <input type='text' id='groupName' class='text'><br>
-                Expiry Date <input type='date' id="groupExpire"><br>
-                <input type='checkbox' id="groupExpireCheckbox"><br>
+                Expiry Date <input type='date' id="groupExpireDate"><input type='time' id="groupExpireTime">
+                <input type='checkbox' id="groupExpireCheckbox">
+                <label for='groupExpireCheckbox'>Don't Expire</label><br><br>
                 <button id='saveGroupButton'>Save</button>
                 <h2>Slide Settings</h2>
                 Slide ID<br><span id="groupSlideID">None selected</span><br><br>
