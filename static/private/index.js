@@ -218,11 +218,14 @@ async function processDeviceChange() {
         document.getElementById("lastCommunication").innerHTML = "❌ failed"
     } else if (data.lastSuccess == null) {
         document.getElementById("lastCommunication").innerHTML = "No communication"
+    } else if (data.lastSuccess == -1) {
+        document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
     } else {
         document.getElementById("lastCommunication").innerHTML = "✅ " + new Date(data.lastSuccess).toLocaleString();
     }
     document.getElementById("deviceID").innerHTML = id
     document.getElementById("deviceIP").value = data.ip;
+    document.getElementById("devicePort").value = data.port;
     document.getElementById("deviceName").value = data.name;
     document.getElementById("deviceAuth").value = data.authentication;
     document.getElementById("deviceGroupList").innerHTML = ""
@@ -307,6 +310,7 @@ async function saveDeviceData() {
         "id": document.getElementById("deviceID").innerHTML,
         "name": document.getElementById("deviceName").value,
         "ip": document.getElementById("deviceIP").value,
+        "port": document.getElementById("devicePort").value,
         "authentication": document.getElementById("deviceAuth").value,
         "groups": groups
     });

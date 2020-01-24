@@ -116,7 +116,7 @@ app.get("/api/group/:group", async (req, res) => {
 app.post("/api/device/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         let max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
-        await sql.query("INSERT INTO devices (id, name, groups) VALUES(?, ?, ?)", [max+1, `Device ${max+1}`, "[]"]);
+        await sql.query("INSERT INTO devices (id, name, groups, port) VALUES(?, ?, ?, ?)", [max+1, `Device ${max+1}`, "[]", 3030]);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -145,7 +145,7 @@ app.post("/api/slide/new", (async (req, res) => {
 
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ?, authentication = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.authentication, req.body.id])
+        await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ?, authentication = ?, port = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.authentication, req.body.port, req.body.id])
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -183,12 +183,12 @@ app.get("/api/slide/get/:id", async (req, res) => {
     }
 });
 
-app.get("/dapi/refresh/:id", async (req, res) => {
+app.get("/api/device/refresh/:id", async (req, res) => {
     pusher.pushManifest(req.params.id)
     res.send({"res": 0})
 });
 
-app.get("/dapi/getnonce/:id", async (req, res) => {
+app.get("/api/device/getnonce/:id", async (req, res) => {
     let info = await sql.query("SELECT manifest FROM devices WHERE id = ?", [req.params.id])
     if (info[0].manifest != null) {
         res.send({"nonce": info[0].manifest})

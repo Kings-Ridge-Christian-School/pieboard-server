@@ -31,14 +31,18 @@
                 <h1>Device Configuration</h1>
                 Device ID<br><span id='deviceID'>null</span><br><br>
                 Device Name<input type='text' id='deviceName' class='text'><br>
-                IP Address<input type='text' id='deviceIP' class='text'>
-                <i>Note: this does not change the device's IP, it changed what IP the server tries to access the device!</i><br><br>
-                Authentication<input type='password' id='deviceAuth' class='text'>
-                <i>Note: this does not change the device's authentication, it changes what code the server uses to authenticate with the device!</i><br><br>
                 Groups<br>
                 <div id='deviceGroupList'>
                 </div>
                 <button id='saveDeviceButton'>Save</button><span class='status' id="saveDeviceStatus">&nbsp;</span>
+                <h3>Advanced Options</h3>
+                IP Address<input type='text' id='deviceIP' class='text'>
+                <i>Note: this does not change the device's IP, it changes what IP the server tries to access the device!</i><br>
+                Port<input type='text' id='devicePort' class='text'>
+                <i>Note: this does not change the device's PORT, it changes what port the server tries to access the device!</i><<br><br>
+                Authentication<input type='password' id='deviceAuth' class='text'>
+                <i>Note: this does not change the device's authentication, it changes what code the server uses to authenticate with the device!</i><br><br>
+
             </div>
 
             <div id='groupConfiguration' class='conf'>

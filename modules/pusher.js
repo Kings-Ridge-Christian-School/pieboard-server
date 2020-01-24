@@ -29,6 +29,7 @@ function generateManifestFromData(slides, groups, id, auth) {
         "time": new Date(),
         "auth": auth,
         "address": process.env.IP,
+        "port": process.env.PI_PORT,
         "id": id,
         "data": []
     }
@@ -63,18 +64,25 @@ async function generateManifestFromID(id) {
 }
 
 async function pushManifest(id) {
-    let data = await sql.query("SELECT ip FROM devices WHERE id = ?", [id])
+    let data = await sql.query("SELECT ip, port FROM devices WHERE id = ?", [id])
     if (data.length > 0) {
         let manifest = await generateManifestFromID(id)
         let nonce = md5(Math.random())
         manifest.nonce = nonce
         await sql.query("UPDATE devices SET manifest = ? WHERE id = ?", [nonce, id]);
         try {
-             await post("http://" + data[0].ip + ":3030/manifest", manifest);
-             console.log("Pushed updated manifest to " + id);
-             await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), id])
-             return true
+             let req = await post(`http://${data[0].ip}:${data[0].port}/manifest`, manifest);
+             if (req.error) {
+                 console.log("Couldn't push due to password!")
+                await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [-1, id])
+                return false
+             } else {
+                console.log("Pushed updated manifest to " + id);
+                await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), id])
+                return true
+             }
         } catch(e)  {
+            console.log(e);
             console.log(id + " is offline!");
             await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [0, id])
             return false
