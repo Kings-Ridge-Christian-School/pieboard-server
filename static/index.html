@@ -11,7 +11,9 @@
                 Please choose a device or group
             </div>
             <div id='deviceConfigurationNav'>
-                device
+                <h2>Device Info</h2>
+                <b>Last Communication:</b><br>
+                <div id='lastCommunication'>null</div>
             </div>
 
             <div id='groupConfigurationNav'>
@@ -29,33 +31,40 @@
                 <h1>Device Configuration</h1>
                 Device ID<br><span id='deviceID'>null</span><br><br>
                 Device Name<input type='text' id='deviceName' class='text'><br>
-                IP Address<input type='text' id='deviceIP' class='text'><br>
                 Groups<br>
                 <div id='deviceGroupList'>
-
                 </div>
-                <button id='saveDeviceButton'>Save</button>
+                <button id='saveDeviceButton'>Save</button><span class='status' id="saveDeviceStatus">&nbsp;</span>
+                <h3>Advanced Options</h3>
+                IP Address<input type='text' id='deviceIP' class='text'>
+                <i>Note: this does not change the device's IP, it changes what IP the server tries to access the device!</i><br>
+                Port<input type='text' id='devicePort' class='text'>
+                <i>Note: this does not change the device's PORT, it changes what port the server tries to access the device!</i><br><br>
+                Authentication<input type='password' id='deviceAuth' class='text'>
+                <i>Note: this does not change the device's authentication, it changes what code the server uses to authenticate with the device!</i><br><br>
+
             </div>
 
             <div id='groupConfiguration' class='conf'>
                 <h2>Group Settings</h2>
                 Group ID<br><span id='groupID'>null</span><br><br>
                 Name <input type='text' id='groupName' class='text'><br>
-                Expiry Date <input type='date' id="groupExpire"><br>
-                <input type='checkbox' id="groupExpireCheckbox"><br>
-                <button id='saveGroupButton'>Save</button>
+                Expiry Date <input type='date' id="groupExpireDate"><input type='time' id="groupExpireTime">
+                <input type='checkbox' id="groupExpireCheckbox">
+                <label for='groupExpireCheckbox'>Don't Expire</label><br><br>
+                <button id='saveGroupButton'>Save</button><span class='status' id="saveGroupStatus">&nbsp;</span>
                 <h2>Slide Settings</h2>
                 Slide ID<br><span id="groupSlideID">None selected</span><br><br>
                 Name <input type='text' id='groupSlideName' class='text'><br>
                 Display Time <input type='number' id='groupSlideDisplayTime' class='number'><br>
-                <button id='saveSlideButton'>Save</button>
+                <button id='saveSlideButton'>Save</button><button id='deleteSlideButton'>Delete Slide</button><span class='status' id="saveSlideStatus">&nbsp;</span>
             </div>
         </main>
         <aside>
-            Devices <button id='addDeviceButton'>+</button>
+            Devices <button id='addDeviceButton'>+</button><button id='deleteDeviceButton'>-</button><span class='status' id="addDeviceStatus">&nbsp;</span>
             <form id='devices'>
             </form> 
-            Groups <button id='addGroupButton'>+</button>
+            Groups <button id='addGroupButton'>+</button><button id='deleteGroupButton'>-</button><span class='status' id="addGroupStatus">&nbsp;</span>
             <form id='groups'>
             </form> 
         </aside>
