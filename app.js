@@ -135,7 +135,7 @@ app.post("/api/group/new", async (req, res) => {
 
 app.post("/api/slide/new", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data) VALUES(?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME, req.body.name, md5(req.body.data), req.body.data]);
+        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data) VALUES(?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data]);
         pusher.updateDevicesInGroup(req.body.member);
         res.send({"error": false});
     } else {
@@ -146,6 +146,7 @@ app.post("/api/slide/new", (async (req, res) => {
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ?, authentication = ?, port = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.authentication, req.body.port, req.body.id])
+        pusher.pushManifest(req.body.id);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -248,4 +249,4 @@ app.post("/api/device/delete", async (req, res) => {
 });
 
 
-app.listen(process.env.PI_PORT, () => console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`))
+app.listen(process.env.PI_PORT || 3000, () => console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`))

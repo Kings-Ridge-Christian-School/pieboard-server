@@ -29,7 +29,7 @@ function generateManifestFromData(slides, groups, id, auth) {
         "time": new Date(),
         "auth": auth,
         "address": process.env.IP,
-        "port": process.env.PI_PORT,
+        "port": process.env.PI_PORT || 3000,
         "id": id,
         "data": []
     }
