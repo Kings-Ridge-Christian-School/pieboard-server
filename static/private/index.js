@@ -163,12 +163,13 @@ async function handleDrop(e) {
         let file = files[file_number]
         if (file.type != null) { 
             if (file.type.startsWith("image")) {
-                await postWithResult("addSlideStatus", "/api/slide/new", {
+                await post("/api/slide/new", {
                     "member": current,
                     "position": -1,
                     "name": file.name,
                     "data": await toBase64(file)
                 })
+                document.getElementById("addSlideStatus").innerHTML =  `${file_number}/${files.length} Uploaded`
             } else {
                 alert("You can only upload images");
             }
@@ -285,11 +286,11 @@ async function processDeviceChange() {
 async function processGroupChange() {
         deselectRadio(devicedom);
         let id = findRadio(groupdom).id.replace("gm_", "");
+        dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p><span class='status' id='addSlideStatus'>Loading...</span>"
         let data = await get("/api/group/" + id);
         let slides = data.slides
         slideCache = {}
         current = id;
-        dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p><span class='status' id='addSlideStatus'></span>"
         for (slide in slides) {
             slideCache[slides[slide].id] = slides[slide]
             let figure = document.createElement("figure");
@@ -307,6 +308,7 @@ async function processGroupChange() {
             figure.addEventListener("click", setImage);
             dropBox.appendChild(figure);
         }
+        document.getElementById("addSlideStatus").innerHTML = ""
         document.getElementById("groupID").innerHTML = current
         document.getElementById("groupName").value = data.info.name
         if (data.info.expire == "0") {

@@ -189,7 +189,7 @@ app.get("/api/device/refresh/:id", async (req, res) => {
     res.send({"res": 0})
 });
 
-app.get("/api/device/getnonce", async (req, res) => {
+app.get("/api/device/getnonce/:id", async (req, res) => {
     let info = await sql.query("SELECT manifest FROM devices WHERE id = ?", [req.params.id])
     if (info[0].manifest != null) {
         res.send({"nonce": info[0].manifest})
