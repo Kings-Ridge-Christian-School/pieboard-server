@@ -12,6 +12,7 @@ require('dotenv').config()
 const sql = require("./modules/sqlite.js")
 const auth = require("./modules/authenticator.js")
 const pusher = require("./modules/pusher.js")
+
 const dir = __dirname + "/static/"
 
 app.use('/static', express.static('static/resources'))
@@ -42,10 +43,10 @@ app.post("/login", async (req, res) => {
                 res.cookie('id', key, {signed: true})
                 res.redirect("/")
             } else {
-                res.send("Group authentication failure for " + req.body.username)
+                res.send("/login?e=ga")
             }
         } else {
-            res.send("Detail authentication failure for " + req.body.username);
+            res.redirect("/login?e=do");
         }
     }
 });
