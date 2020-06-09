@@ -43,10 +43,10 @@ app.post("/login", async (req, res) => {
                 res.cookie('id', key, {signed: true})
                 res.redirect("/")
             } else {
-                res.send("Group authentication failure for " + req.body.username)
+                res.send("/login?e=ga")
             }
         } else {
-            res.send("Detail authentication failure for " + req.body.username);
+            res.redirect("/login?e=do");
         }
     }
 });
@@ -100,7 +100,7 @@ app.get("/api/group/:group", async (req, res) => {
         list = (await sql.query("SELECT * FROM groups WHERE id = ?", [req.params.group]))
         if (list.length > 0) {
             list = list[0]
-            let slides = await sql.query("SELECT * FROM slides WHERE member = ?", [req.params.group])
+            let slides = await sql.query("SELECT id, member, position, screentime, name, hash, thumbnail as data FROM slides WHERE member = ?", [req.params.group])
             res.send({
                 "info": list,
                 "slides": slides
@@ -135,7 +135,7 @@ app.post("/api/group/new", async (req, res) => {
 
 app.post("/api/slide/new", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data) VALUES(?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data]);
+        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
         pusher.updateDevicesInGroup(req.body.member);
         res.send({"error": false});
     } else {
