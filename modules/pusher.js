@@ -101,6 +101,16 @@ async function updateDevicesInGroup(group) {
     }
 }
 
+setInterval(async () => {
+    let devicesToCheck = await sql.query("SELECT id, lastSuccess FROM devices");
+    for (let device of devices) {
+        if (device.lastSuccess == 0) {
+            console.log("Attempting to push new manifest to offline device")
+            pushManifest(device.id)
+        }
+    }
+}, 60*1000*3) // every 3 minutes or so
+
 exports.generateManifestFromData = generateManifestFromData
 exports.generateManifestFromID = generateManifestFromID
 exports.pushManifest = pushManifest
