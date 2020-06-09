@@ -1,7 +1,7 @@
 let groupdom = document.getElementById("groups");
 let devicedom = document.getElementById("devices");
 let dropArea = document.getElementById("dropBox");
-let state, current, currentGroup, currentDevice, slideCache, deviceCache, groupCache
+let state, current, currentGroup, currentDevice, slideCache, deviceCache, groupCache, slideRestartCache
 
 function get(url) {
     return new Promise(async (resolve) => {
@@ -116,7 +116,10 @@ async function deleteSlide() {
     if (confirm("Are you sure you want to delete slide " + slide + "? This is irreversable!")) {
         res = await postWithResult("addGroupStatus", "/api/slide/delete", {"id": slide});
         if (res) {
-            processGroupChange();
+            console.log(slideRestartCache.slides);
+            delete slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == slide)]
+            slideRestartCache.slides = slideRestartCache.slides.filter((el) => el != null);
+            processGroupChange(true);
             init_navigation();
         }
     }
@@ -138,6 +141,7 @@ function findRadio(radios) {
           break;
         }
       }
+      return radios[0]
 }
 function deselectRadio(radios) {
     for (var i = 0, length = radios.length; i < length; i++) {
@@ -175,7 +179,7 @@ async function handleDrop(e) {
             }
         }
     }
-    processGroupChange();
+    processGroupChange(false);
 }
 
 async function init_navigation() {
@@ -283,11 +287,13 @@ async function processDeviceChange() {
     setState(1)
 }
 
-async function processGroupChange() {
+async function processGroupChange(useCache) {
         deselectRadio(devicedom);
         let id = findRadio(groupdom).id.replace("gm_", "");
         dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p><span class='status' id='addSlideStatus'>Loading...</span>"
-        let data = await get("/api/group/" + id);
+        setState(2);
+        let data = useCache && slideRestartCache != null ? slideRestartCache : await get("/api/group/" + id);
+        if (!useCache) slideRestartCache = data
         let slides = data.slides
         slideCache = {}
         current = id;
@@ -333,7 +339,6 @@ async function processGroupChange() {
         document.getElementById("groupSlideDisplayTime").disabled = true
         document.getElementById("saveSlideButton").disabled = true
         document.getElementById("deleteSlideButton").disabled = true
-        setState(2);
 }
 
 async function saveDeviceData() {
@@ -377,12 +382,15 @@ async function saveSlideData() {
         "name": document.getElementById("groupSlideName").value,
         "screentime": document.getElementById("groupSlideDisplayTime").value
     });
-    processGroupChange()
+    slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("groupSlideID").innerHTML)].name = document.getElementById("groupSlideName").value
+    slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("groupSlideID").innerHTML)].screentime = document.getElementById("groupSlideDisplayTime").value
+
+    processGroupChange(true)
 }
 
 async function isReady() {
     devicedom.addEventListener("change", async () => processDeviceChange());
-    groupdom.addEventListener("change", async () => processGroupChange());
+    groupdom.addEventListener("change", async () => processGroupChange(false));
     document.getElementById("saveDeviceButton").addEventListener("click", async => {saveDeviceData()});
     document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
     document.getElementById("saveSlideButton").addEventListener("click", async => {saveSlideData()});
