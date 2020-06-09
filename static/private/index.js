@@ -161,17 +161,47 @@ function toBase64(file) {
 }
 
 async function handleDrop(e) {
+    function resizedataURL(datas, wantedWidth, wantedHeight) { // https://stackoverflow.com/questions/20958078/resize-a-base-64-image-in-javascript-without-using-canvas
+        return new Promise((resolve) => {
+            var img = new Image(); 
+            img.onload = function()
+                {        
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    canvas.width = wantedWidth;
+                    canvas.height = wantedHeight;
+                    ctx.drawImage(this, 0, 0, wantedWidth, wantedHeight);
+    
+                    var dataURI = canvas.toDataURL();
+                    resolve(dataURI);
+                };
+            img.src = datas;
+        });
+    }
+    
+    function makethumb(data) {
+        return new Promise((resolve) => {
+            var i = new Image(); 
+            i.onload = function(){
+                let size = i.width/200
+                resolve(resizedataURL(data, i.width/size, i.height/size));
+            };
+            i.src = data; 
+        });
+    }
     let dt = e.dataTransfer
     let files = dt.files
     for (file_number in files) {
         let file = files[file_number]
         if (file.type != null) { 
             if (file.type.startsWith("image")) {
+                let b64 = await toBase64(file)
                 await post("/api/slide/new", {
                     "member": current,
                     "position": -1,
                     "name": file.name,
-                    "data": await toBase64(file)
+                    "data": b64,
+                    "thumbnail": await makethumb(b64)
                 })
                 document.getElementById("addSlideStatus").innerHTML =  `${file_number}/${files.length} Uploaded`
             } else {
