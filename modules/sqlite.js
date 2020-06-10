@@ -5,6 +5,7 @@ db.serialize(() => {
     db.run("CREATE TABLE IF NOT EXISTS slideshows (id INTEGER PRIMARY KEY AUTOINCREMENT, expire INT, name TEXT)");
     db.run("CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, member INT, position INT, screentime INT, name TEXT, hash TEXT, data BLOB, thumbnail BLOB)");
     db.run("CREATE INDEX IF NOT EXISTS member ON slides(member)")
+    db.run("CREATE INDEX IF NOT EXISTS position ON slides(position)")
 });
 
 function query(query, data) {

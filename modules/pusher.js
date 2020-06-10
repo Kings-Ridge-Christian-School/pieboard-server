@@ -52,7 +52,7 @@ async function generateManifestFromID(id) {
         let slides = []
         for (slideshow in slideshows) {
             slideshowList[slideshows[slideshow]] = await sql.query("SELECT expire FROM slideshows WHERE id = ?", [slideshows[slideshow]]);
-            let slideList = await sql.query("SELECT id, screentime, data, member, hash FROM slides WHERE member = ?", [slideshows[slideshow]])
+            let slideList = await sql.query("SELECT id, screentime, data, member, hash FROM slides WHERE member = ? ORDER BY position ASC", [slideshows[slideshow]])
             for (slide in slideList) {
                 slides.push(slideList[slide])
             }

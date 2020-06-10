@@ -100,7 +100,7 @@ app.get("/api/slideshow/:slideshow", async (req, res) => {
         list = (await sql.query("SELECT * FROM slideshows WHERE id = ?", [req.params.slideshow]))
         if (list.length > 0) {
             list = list[0]
-            let slides = await sql.query("SELECT id, member, position, screentime, name, hash, thumbnail as data FROM slides WHERE member = ?", [req.params.slideshow])
+            let slides = await sql.query("SELECT id, member, position, screentime, name, hash, thumbnail as data FROM slides WHERE member = ? ORDER BY position ASC", [req.params.slideshow])
             res.send({
                 "info": list,
                 "slides": slides
@@ -135,7 +135,11 @@ app.post("/api/slideshow/new", async (req, res) => {
 
 app.post("/api/slide/new", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
+        let currentMax = await sql.query("SELECT position FROM slides WHERE member = ? ORDER BY position DESC LIMIT 1", req.body.member);
+        if (currentMax.length == 0) position = 0
+        else position = currentMax[0].position + 1
+        console.log(position);
+        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
         pusher.updateDevicesWithSlideshow(req.body.member);
         res.send({"error": false});
     } else {

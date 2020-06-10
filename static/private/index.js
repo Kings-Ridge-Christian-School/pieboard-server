@@ -198,7 +198,6 @@ async function handleDrop(e) {
                 let b64 = await toBase64(file)
                 await post("/api/slide/new", {
                     "member": current,
-                    "position": -1,
                     "name": file.name,
                     "data": b64,
                     "thumbnail": await makethumb(b64)
