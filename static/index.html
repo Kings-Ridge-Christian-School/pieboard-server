@@ -8,7 +8,7 @@
     <div class="container">
         <nav>
             <div id='placeholderNav'>
-                Please choose a device or group
+                Please choose a device or slideshow
             </div>
             <div id='deviceConfigurationNav'>
                 <h2>Device Info</h2>
@@ -16,7 +16,7 @@
                 <div id='lastCommunication'>null</div>
             </div>
 
-            <div id='groupConfigurationNav'>
+            <div id='slideshowConfigurationNav'>
                 <div id="dropBox">
                     Slides
                 </div>
@@ -25,14 +25,14 @@
       
         <main>
             <div id='placeholder'>
-                Please choose a device or group
+                Please choose a device or slideshow
             </div>
             <div id='deviceConfiguration' class='conf'>
                 <h1>Device Configuration</h1>
                 Device ID<br><span id='deviceID'>null</span><br><br>
                 Device Name<input type='text' id='deviceName' class='text'><br>
-                Groups<br>
-                <div id='deviceGroupList'>
+                Slideshows<br>
+                <div id='deviceSlideshowList'>
                 </div>
                 <button id='saveDeviceButton'>Save</button><span class='status' id="saveDeviceStatus">&nbsp;</span>
                 <h3>Advanced Options</h3>
@@ -45,18 +45,18 @@
 
             </div>
 
-            <div id='groupConfiguration' class='conf'>
-                <h2>Group Settings</h2>
-                Group ID<br><span id='groupID'>null</span><br><br>
-                Name <input type='text' id='groupName' class='text'><br>
-                Expiry Date <input type='date' id="groupExpireDate"><input type='time' id="groupExpireTime">
-                <input type='checkbox' id="groupExpireCheckbox">
-                <label for='groupExpireCheckbox'>Don't Expire</label><br><br>
-                <button id='saveGroupButton'>Save</button><span class='status' id="saveGroupStatus">&nbsp;</span>
+            <div id='slideshowConfiguration' class='conf'>
+                <h2>Slideshow Settings</h2>
+                Slideshow ID<br><span id='slideshowID'>null</span><br><br>
+                Name <input type='text' id='slideshowName' class='text'><br>
+                Expiry Date <input type='date' id="slideshowExpireDate"><input type='time' id="slideshowExpireTime">
+                <input type='checkbox' id="slideshowExpireCheckbox">
+                <label for='slideshowExpireCheckbox'>Don't Expire</label><br><br>
+                <button id='saveSlideshowButton'>Save</button><span class='status' id="saveSlideshowStatus">&nbsp;</span>
                 <h2>Slide Settings</h2>
-                Slide ID<br><span id="groupSlideID">None selected</span><br><br>
-                Name <input type='text' id='groupSlideName' class='text'><br>
-                Display Time <input type='number' id='groupSlideDisplayTime' class='number'><br>
+                Slide ID<br><span id="slideshowSlideID">None selected</span><br><br>
+                Name <input type='text' id='slideshowSlideName' class='text'><br>
+                Display Time <input type='number' id='slideshowSlideDisplayTime' class='number'><br>
                 <button id='saveSlideButton'>Save</button><button id='deleteSlideButton'>Delete Slide</button><span class='status' id="saveSlideStatus">&nbsp;</span>
             </div>
         </main>
@@ -64,8 +64,8 @@
             Devices <button id='addDeviceButton'>+</button><button id='deleteDeviceButton'>-</button><span class='status' id="addDeviceStatus">&nbsp;</span>
             <form id='devices'>
             </form> 
-            Groups <button id='addGroupButton'>+</button><button id='deleteGroupButton'>-</button><span class='status' id="addGroupStatus">&nbsp;</span>
-            <form id='groups'>
+            Slideshows <button id='addSlideshowButton'>+</button><button id='deleteSlideshowButton'>-</button><span class='status' id="addSlideshowStatus">&nbsp;</span>
+            <form id='slideshows'>
             </form> 
         </aside>
       </div>

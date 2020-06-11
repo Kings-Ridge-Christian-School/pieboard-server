@@ -24,7 +24,7 @@ function post(url, data) {
     });
 }
 
-function generateManifestFromData(slides, groups, id, auth) {
+function generateManifestFromData(slides, slideshows, id, auth) {
     let manifest = {
         "time": new Date(),
         "auth": auth,
@@ -38,26 +38,26 @@ function generateManifestFromData(slides, groups, id, auth) {
             "id": slides[slide].id,
             "hash": slides[slide].hash,
             "screentime": slides[slide].screentime,
-            "expiration": groups[slides[slide].member][0].expire,
+            "expiration": slideshows[slides[slide].member][0].expire,
         });
     }
     return(manifest);
 }
 
 async function generateManifestFromID(id) {
-    let device = await sql.query("SELECT groups, authentication FROM devices WHERE id = ?", [id])
+    let device = await sql.query("SELECT slideshows, authentication FROM devices WHERE id = ?", [id])
     if (device.length > 0) {
-        groups = JSON.parse(device[0].groups)
-        let groupList = {}
+        slideshows = JSON.parse(device[0].slideshows)
+        let slideshowList = {}
         let slides = []
-        for (group in groups) {
-            groupList[groups[group]] = await sql.query("SELECT expire FROM groups WHERE id = ?", [groups[group]]);
-            let slideGroup = await sql.query("SELECT id, screentime, data, member, hash FROM slides WHERE member = ?", [groups[group]])
-            for (slide in slideGroup) {
-                slides.push(slideGroup[slide])
+        for (slideshow in slideshows) {
+            slideshowList[slideshows[slideshow]] = await sql.query("SELECT expire FROM slideshows WHERE id = ?", [slideshows[slideshow]]);
+            let slideList = await sql.query("SELECT id, screentime, data, member, hash FROM slides WHERE member = ? ORDER BY position ASC", [slideshows[slideshow]])
+            for (slide in slideList) {
+                slides.push(slideList[slide])
             }
         }
-        return generateManifestFromData(slides, groupList, id, device[0].authentication);
+        return generateManifestFromData(slides, slideList, id, device[0].authentication);
     } else {
         return false
     }
@@ -92,17 +92,17 @@ async function pushManifest(id) {
     }
 }
 
-async function updateDevicesInGroup(group) {
-    let devices = await sql.query("SELECT id, groups FROM devices")
+async function updateDevicesWithSlideshow(slideshow) {
+    let devices = await sql.query("SELECT id, slideshows FROM devices")
     for (device in devices) {
-        if (JSON.parse(devices[device].groups).includes(group + "")) {
+        if (JSON.parse(devices[device].slideshows).includes(slideshow + "")) {
             pushManifest(devices[device].id)
         }
     }
 }
 
 setInterval(async () => {
-    let devicesToCheck = await sql.query("SELECT id, lastSuccess FROM devices");
+    let devices = await sql.query("SELECT id, lastSuccess FROM devices");
     for (let device of devices) {
         if (device.lastSuccess == 0) {
             console.log("Attempting to push new manifest to offline device")
@@ -114,4 +114,4 @@ setInterval(async () => {
 exports.generateManifestFromData = generateManifestFromData
 exports.generateManifestFromID = generateManifestFromID
 exports.pushManifest = pushManifest
-exports.updateDevicesInGroup = updateDevicesInGroup
+exports.updateDevicesWithSlideshow = updateDevicesWithSlideshow

@@ -71,9 +71,9 @@ app.get("/api/devices", async (req, res) => {
     }
 });
 
-app.get("/api/groups", async (req, res) => {
+app.get("/api/slideshows", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        res.send(await sql.query("SELECT name, id FROM groups"))
+        res.send(await sql.query("SELECT name, id FROM slideshows"))
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -85,7 +85,7 @@ app.get("/api/device/:device", async (req, res) => {
         let data = (await sql.query("SELECT * FROM devices WHERE id = ?", [req.params.device]))
         if (data.length > 0) {
             data = data[0]
-            data.groups = JSON.parse(data.groups)
+            data.slideshows = JSON.parse(data.slideshows)
             res.send(data);
         } else {
             res.send({"error": true})
@@ -95,12 +95,12 @@ app.get("/api/device/:device", async (req, res) => {
     }
 });
 
-app.get("/api/group/:group", async (req, res) => {
+app.get("/api/slideshow/:slideshow", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        list = (await sql.query("SELECT * FROM groups WHERE id = ?", [req.params.group]))
+        list = (await sql.query("SELECT * FROM slideshows WHERE id = ?", [req.params.slideshow]))
         if (list.length > 0) {
             list = list[0]
-            let slides = await sql.query("SELECT id, member, position, screentime, name, hash, thumbnail as data FROM slides WHERE member = ?", [req.params.group])
+            let slides = await sql.query("SELECT id, member, position, screentime, name, hash, thumbnail as data FROM slides WHERE member = ? ORDER BY position ASC", [req.params.slideshow])
             res.send({
                 "info": list,
                 "slides": slides
@@ -116,17 +116,17 @@ app.get("/api/group/:group", async (req, res) => {
 app.post("/api/device/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         let max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
-        await sql.query("INSERT INTO devices (id, name, groups, port) VALUES(?, ?, ?, ?)", [max+1, `Device ${max+1}`, "[]", 3030]);
+        await sql.query("INSERT INTO devices (id, name, slideshows, port) VALUES(?, ?, ?, ?)", [max+1, `Device ${max+1}`, "[]", 3030]);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
     }
 });
 
-app.post("/api/group/new", async (req, res) => {
+app.post("/api/slideshow/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let max = (await sql.query("SELECT MAX(id) AS id_max FROM groups"))[0].id_max;
-        await sql.query("INSERT INTO groups (id, name, expire) VALUES(?, ?, ?)", [max+1, `Group ${max+1}`, 0]);
+        let max = (await sql.query("SELECT MAX(id) AS id_max FROM slideshows"))[0].id_max;
+        await sql.query("INSERT INTO slideshows (id, name, expire) VALUES(?, ?, ?)", [max+1, `Slideshow ${max+1}`, 0]);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -135,8 +135,35 @@ app.post("/api/group/new", async (req, res) => {
 
 app.post("/api/slide/new", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, req.body.position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
-        pusher.updateDevicesInGroup(req.body.member);
+        let currentMax = await sql.query("SELECT position FROM slides WHERE member = ? ORDER BY position DESC LIMIT 1", req.body.member);
+        if (currentMax.length == 0) position = 0
+        else position = currentMax[0].position + 1
+        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
+        pusher.updateDevicesWithSlideshow(req.body.member);
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+}));
+
+app.post("/api/slide/move", (async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        if (req.body.originalPos > req.body.newPos) {
+            let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.newPos, req.body.originalPos])
+            for (let slide of toChange) {
+                if (slide.position >= req.body.newPos && slide.position < req.body.originalPos) slide.position += 1
+                else if (slide.position == req.body.originalPos) slide.position = req.body.newPos
+                await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slide.position, slide.id]);
+            }
+        } else if (req.body.originalPos < req.body.newPos) {
+            let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.originalPos, req.body.newPos])
+            for (let slide of toChange) {
+                if (slide.position <= req.body.newPos && slide.position > req.body.originalPos) slide.position -= 1
+                else if (slide.position == req.body.originalPos) slide.position = req.body.newPos
+                await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slide.position, slide.id]);
+            }
+        } else {}
+        pusher.updateDevicesWithSlideshow(req.body.slideshow);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -145,7 +172,7 @@ app.post("/api/slide/new", (async (req, res) => {
 
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE devices SET name = ?, ip = ?, groups = ?, authentication = ?, port = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.groups), req.body.authentication, req.body.port, req.body.id])
+        await sql.query("UPDATE devices SET name = ?, ip = ?, slideshows = ?, authentication = ?, port = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.slideshows), req.body.authentication, req.body.port, req.body.id])
         pusher.pushManifest(req.body.id);
         res.send({"error": false});
     } else {
@@ -156,17 +183,17 @@ app.post("/api/device/edit", async (req, res) => {
 app.post("/api/slide/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE slides SET name = ?, screentime = ? WHERE id=?", [req.body.name, req.body.screentime, req.body.id]) // NOT COMPLETE
-        pusher.updateDevicesInGroup((await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))[0].member)
+        pusher.updateDevicesWithSlideshow((await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))[0].member)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
     }
 });
 
-app.post("/api/group/edit", async (req, res) => {
+app.post("/api/slideshow/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE groups SET name = ?, expire = ? WHERE id= ?", [req.body.name, req.body.expire, req.body.id])
-        pusher.updateDevicesInGroup(req.body.id)
+        await sql.query("UPDATE slideshows SET name = ?, expire = ? WHERE id= ?", [req.body.name, req.body.expire, req.body.id])
+        pusher.updateDevicesWithSlideshow(req.body.id)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -200,9 +227,9 @@ app.get("/api/device/getnonce/:id", async (req, res) => {
 
 app.post("/api/slide/delete", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let group =  await sql.query("SELECT member FROM slides WHERE id= ?", [req.body.id])
+        let slideshow =  await sql.query("SELECT member FROM slides WHERE id= ?", [req.body.id])
         await sql.query("DELETE FROM slides WHERE id = ?", [req.body.id]);
-        pusher.updateDevicesInGroup(group[0].member);
+        pusher.updateDevicesWithSlideshow(slideshow[0].member);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -219,20 +246,20 @@ function removeFromArray(arr, item) {
      return arr
 }
 
-app.post("/api/group/delete", async (req, res) => {
+app.post("/api/slideshow/delete", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("DELETE FROM groups WHERE id = ?", [req.body.id])
+        await sql.query("DELETE FROM slideshows WHERE id = ?", [req.body.id])
         await sql.query("DELETE FROM slides WHERE member = ?", [req.body.id])
-        let devices = await sql.query('SELECT id, groups FROM devices');
+        let devices = await sql.query('SELECT id, slideshows FROM devices');
         for (device in devices) {
-            let groups = JSON.parse(devices[device].groups)
-            if (groups.includes(req.body.id)) {
-                groups = removeFromArray(groups, req.body.id);
-                await sql.query("UPDATE devices SET groups = ? WHERE id = ?", [JSON.stringify(groups), devices[device].id]);
+            let slideshows = JSON.parse(devices[device].slideshows)
+            if (slideshows.includes(req.body.id)) {
+                slideshows = removeFromArray(slideshows, req.body.id);
+                await sql.query("UPDATE devices SET slideshows = ? WHERE id = ?", [JSON.stringify(slideshows), devices[device].id]);
                 await pusher.pushManifest(devices[device].id);
             }
         }
-        pusher.updateDevicesInGroup(req.body.id)
+        pusher.updateDevicesWithSlideshow(req.body.id)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
