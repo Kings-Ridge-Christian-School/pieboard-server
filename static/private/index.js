@@ -2,7 +2,7 @@ let slideshowdom = document.getElementById("slideshows");
 let devicedom = document.getElementById("devices");
 let dropArea = document.getElementById("dropBox");
 let state, current, currentSlideshow, currentDevice, slideCache, deviceCache, slideshowCache, slideRestartCache
-
+let internalDrag = false
 function get(url) {
     return new Promise(async (resolve) => {
         let response = await fetch(url);
@@ -189,26 +189,63 @@ async function handleDrop(e) {
             i.src = data; 
         });
     }
-    let dt = e.dataTransfer
-    let files = dt.files
-    for (file_number in files) {
-        let file = files[file_number]
-        if (file.type != null) { 
-            if (file.type.startsWith("image")) {
-                let b64 = await toBase64(file)
-                await post("/api/slide/new", {
-                    "member": current,
-                    "name": file.name,
-                    "data": b64,
-                    "thumbnail": await makethumb(b64)
-                })
-                document.getElementById("addSlideStatus").innerHTML =  `${file_number}/${files.length} Uploaded`
-            } else {
-                alert("You can only upload images");
+    if (internalDrag == false) {
+        let dt = e.dataTransfer
+        let files = dt.files
+        for (file_number in files) {
+            let file = files[file_number]
+            if (file.type != null) { 
+                if (file.type.startsWith("image")) {
+                    let b64 = await toBase64(file)
+                    await post("/api/slide/new", {
+                        "member": current,
+                        "name": file.name,
+                        "data": b64,
+                        "thumbnail": await makethumb(b64)
+                    })
+                    document.getElementById("addSlideStatus").innerHTML =  `${file_number}/${files.length} Uploaded`
+                } else {
+                    alert("You can only upload images");
+                }
             }
         }
+        processSlideshowChange(false);
+    } else {
+        console.log("context")
     }
-    processSlideshowChange(false);
+}
+
+function onDragStart(e) {
+    internalDrag = e.target;
+}
+
+function onDragEnd(e) {
+    internalDrag = false
+    let dragZones = document.getElementsByClassName("dropvisible")
+    for (let zone of dragZones) {
+        zone.className = "dropzone"
+    }
+}
+
+function handleOver(e) {
+    let myID = e.target.id.split("_")[2]
+    if (internalDrag._id != myID && internalDrag._id + 1 != myID) e.target.className = "dropvisible"
+}
+function handleLeave(e) {
+    e.target.className = "dropzone"
+}
+
+async function handleMove(e) {
+    console.log(e)
+    let origin = internalDrag._id
+    let final = e.target.id.split("_")[2]
+    if (origin < final) final--
+    await postWithResult("addSlideStatus", "/api/slide/move", {
+        "originalPos": origin,
+        "newPos": final,
+        "slideshow": current
+    });
+    processSlideshowChange(false)
 }
 
 async function init_navigation() {
@@ -326,6 +363,16 @@ async function processSlideshowChange(useCache) {
         let slides = data.slides
         slideCache = {}
         current = id;
+        // note: same as content below, change both
+        let dropZone = document.createElement("p")
+        dropZone.className = 'dropzone'
+        dropZone.id = 'g_post_' + 0
+        dropZone.addEventListener('dragover', handleOver, false);
+        dropZone.addEventListener('dragleave', handleLeave, false);
+        dropZone.addEventListener('drop', handleMove, false);
+        dropZone.appendChild(document.createTextNode("Move here"));
+        dropBox.appendChild(dropZone)
+        let i = 0;
         for (slide in slides) {
             slideCache[slides[slide].id] = slides[slide]
             let figure = document.createElement("figure");
@@ -333,6 +380,7 @@ async function processSlideshowChange(useCache) {
             let capt = document.createElement("figcaption");
             figure.className = "g_fig"
             figure.id = "g_fislideshowID_" + slides[slide].id
+            figure._id = i
             img.id = slides[slide].id
             capt.id = slides[slide].id
             img.setAttribute("src", slides[slide].data);
@@ -341,7 +389,22 @@ async function processSlideshowChange(useCache) {
             figure.appendChild(img);
             figure.appendChild(capt);
             figure.addEventListener("click", setImage);
+            figure.setAttribute("draggable", true);
+            img.setAttribute("draggable", false);
+            figure.addEventListener("dragstart", onDragStart, false);
+            figure.addEventListener("dragend", onDragEnd, false);
             dropBox.appendChild(figure);
+
+            i++ // added here because the dropZone is for the post after
+
+            let dropZone = document.createElement("p")
+            dropZone.className = 'dropzone'
+            dropZone.id = 'g_post_' + i
+            dropZone.addEventListener('dragover', handleOver, false);
+            dropZone.addEventListener('dragleave', handleLeave, false);
+            dropZone.addEventListener('drop', handleMove, false);
+            dropZone.appendChild(document.createTextNode("Move here"));
+            dropBox.appendChild(dropZone)
         }
         document.getElementById("addSlideStatus").innerHTML = ""
         document.getElementById("slideshowID").innerHTML = current

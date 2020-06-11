@@ -106,7 +106,6 @@ aside select {
 }
 figure {
     margin: 0;
-    margin-bottom: 10px;
     width: 90%;
     border: 5px solid lightgray;
     border-radius: 3px;
@@ -152,4 +151,21 @@ input:disabled {
 
 .status {
     padding-left: 10px;
+}
+.dropzone {
+    background-color: white;
+    color: white;
+    border-radius: 5px;
+    height: 20px;
+    margin: 0px;
+    padding: 0;
+}
+
+.dropvisible {
+    background-color: lightgray;
+    color: black;
+    border-radius: 5px;
+    margin: 3px;
+    text-align: center;
+    padding: 50px;
 }

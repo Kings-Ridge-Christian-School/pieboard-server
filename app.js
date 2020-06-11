@@ -147,6 +147,30 @@ app.post("/api/slide/new", (async (req, res) => {
     }
 }));
 
+app.post("/api/slide/move", (async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        if (req.body.originalPos > req.body.newPos) {
+            let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.newPos, req.body.originalPos])
+            for (let slide of toChange) {
+                if (slide.position >= req.body.newPos && slide.position < req.body.originalPos) slide.position += 1
+                else if (slide.position == req.body.originalPos) slide.position = req.body.newPos
+                await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slide.position, slide.id]);
+            }
+        } else if (req.body.originalPos < req.body.newPos) {
+            let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.originalPos, req.body.newPos])
+            for (let slide of toChange) {
+                if (slide.position <= req.body.newPos && slide.position > req.body.originalPos) slide.position -= 1
+                else if (slide.position == req.body.originalPos) slide.position = req.body.newPos
+                await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slide.position, slide.id]);
+            }
+        } else {}
+        pusher.updateDevicesWithSlideshow(req.body.slideshow);
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+}));
+
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("UPDATE devices SET name = ?, ip = ?, slideshows = ?, authentication = ?, port = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.slideshows), req.body.authentication, req.body.port, req.body.id])
