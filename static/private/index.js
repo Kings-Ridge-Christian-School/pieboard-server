@@ -116,7 +116,6 @@ async function deleteSlide() {
     if (confirm("Are you sure you want to delete slide " + slide + "? This is irreversable!")) {
         res = await postWithResult("addSlideshowStatus", "/api/slide/delete", {"id": slide});
         if (res) {
-            console.log(slideRestartCache.slides);
             delete slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == slide)]
             slideRestartCache.slides = slideRestartCache.slides.filter((el) => el != null);
             processSlideshowChange(true);
@@ -210,8 +209,6 @@ async function handleDrop(e) {
             }
         }
         processSlideshowChange(false);
-    } else {
-        console.log("context")
     }
 }
 
@@ -228,15 +225,16 @@ function onDragEnd(e) {
 }
 
 function handleOver(e) {
-    let myID = e.target.id.split("_")[2]
-    if (internalDrag._id != myID && internalDrag._id + 1 != myID) e.target.className = "dropvisible"
+    if (internalDrag != false) {
+        let myID = e.target.id.split("_")[2]
+        if (internalDrag._id != myID && internalDrag._id + 1 != myID) e.target.className = "dropvisible"
+    }
 }
 function handleLeave(e) {
     e.target.className = "dropzone"
 }
 
 async function handleMove(e) {
-    console.log(e)
     let origin = internalDrag._id
     let final = e.target.id.split("_")[2]
     if (origin < final) final--
@@ -245,7 +243,8 @@ async function handleMove(e) {
         "newPos": final,
         "slideshow": current
     });
-    processSlideshowChange(false)
+    slideRestartCache.slides.splice(origin, 0, slideRestartCache.slides.splice(final, 1)[0]);
+    processSlideshowChange(true)
 }
 
 async function init_navigation() {

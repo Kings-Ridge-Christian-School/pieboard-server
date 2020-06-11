@@ -138,7 +138,6 @@ app.post("/api/slide/new", (async (req, res) => {
         let currentMax = await sql.query("SELECT position FROM slides WHERE member = ? ORDER BY position DESC LIMIT 1", req.body.member);
         if (currentMax.length == 0) position = 0
         else position = currentMax[0].position + 1
-        console.log(position);
         await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
         pusher.updateDevicesWithSlideshow(req.body.member);
         res.send({"error": false});
