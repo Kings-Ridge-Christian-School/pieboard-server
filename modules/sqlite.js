@@ -1,5 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('data/data.db');
+require('dotenv').config()
+
+var db = process.env.TEST_ENV == 1 ? new sqlite3.Database(':memory:') : new sqlite3.Database('data/data.db');
 db.serialize(() => {
     db.run("CREATE TABLE IF NOT EXISTS devices (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, ip TEXT, port INT, manifest TEXT, authentication TEXT, lastSuccess INT, slideshows TEXT)");
     db.run("CREATE TABLE IF NOT EXISTS slideshows (id INTEGER PRIMARY KEY AUTOINCREMENT, expire INT, name TEXT)");

@@ -5,19 +5,25 @@ require('dotenv').config()
 
 function get(url) {
     return new Promise(async (resolve) => {
-        let response = await fetch(url);
-        resolve(response.json());
+        if (process.env.TEST_ENV == 1) resolve({})
+        else {
+            let response = await fetch(url);
+            resolve(response.json());
+        }
     });
 }
 function post(url, data) {
     return new Promise(async (resolve, reject) => {
         try {
-            let response = await fetch(url, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(data)
-            });
-            resolve(response.json());
+            if (process.env.TEST_ENV == 1) resolve({})
+            else {
+                let response = await fetch(url, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(data)
+                });
+                resolve(response.json());
+            }
         } catch(e) {
             reject(e)
         }
@@ -50,9 +56,10 @@ async function generateManifestFromID(id) {
         slideshows = JSON.parse(device[0].slideshows)
         let slideshowList = {}
         let slides = []
+        let slideList = [];
         for (slideshow in slideshows) {
             slideshowList[slideshows[slideshow]] = await sql.query("SELECT expire FROM slideshows WHERE id = ?", [slideshows[slideshow]]);
-            let slideList = await sql.query("SELECT id, screentime, data, member, hash FROM slides WHERE member = ? ORDER BY position ASC", [slideshows[slideshow]])
+            slideList = await sql.query("SELECT id, screentime, data, member, hash FROM slides WHERE member = ? ORDER BY position ASC", [slideshows[slideshow]])
             for (slide in slideList) {
                 slides.push(slideList[slide])
             }
