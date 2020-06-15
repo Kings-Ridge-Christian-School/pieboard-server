@@ -342,8 +342,9 @@ app.post("/api/device/delete", async (req, res) => {
 });
 
 
-
-let server = app.listen(process.env.PI_PORT || 3000, () => console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`))
+let port = process.env.PI_PORT || 3000
+if (process.env.TEST_ENV == 1) port = null
+let server = app.listen(port, () => {if (process.env.TEST_ENV != 1)console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`)})
 
 function stop() {
     server.close()
