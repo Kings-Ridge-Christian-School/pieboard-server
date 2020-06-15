@@ -241,9 +241,13 @@ app.get("/api/device/getnonce/:id", async (req, res) => {
 
 app.post("/api/slide/delete", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let slideshow =  await sql.query("SELECT member FROM slides WHERE id= ?", [req.body.id])
+        let slideInfo =  await sql.query("SELECT member, position FROM slides WHERE id= ?", [req.body.id])
         await sql.query("DELETE FROM slides WHERE id = ?", [req.body.id]);
-        pusher.updateDevicesWithSlideshow(slideshow[0].member);
+        let slides = sql.query("SELECT id, position FROM slides WHERE member = ? AND position > ?", [slideInfo[0].member, slideInfo[0].position]);
+        for (let slide in slides) {
+            await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slides[slide].position-1, slides[slide].id]);
+        }
+        pusher.updateDevicesWithSlideshow(slideInfo[0].member);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
