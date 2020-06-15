@@ -243,8 +243,8 @@ async function handleMove(e) {
         "newPos": final,
         "slideshow": current
     });
-    slideRestartCache.slides.splice(origin, 0, slideRestartCache.slides.splice(final, 1)[0]);
-    processSlideshowChange(true)
+    //slideRestartCache.slides.splice(origin, 0, slideRestartCache.slides.splice(final, 1)[0]);
+    processSlideshowChange(false)
 }
 
 async function init_navigation() {
@@ -382,7 +382,8 @@ async function processSlideshowChange(useCache) {
             figure._id = i
             img.id = slides[slide].id
             capt.id = slides[slide].id
-            img.setAttribute("src", slides[slide].data);
+            img.setAttribute("loading", "lazy")
+            img.setAttribute("src", `/api/slide/thumbnail/${slides[slide].id}`);
             capt.appendChild(document.createTextNode(slides[slide].name));
 
             figure.appendChild(img);

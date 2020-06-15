@@ -100,7 +100,7 @@ app.get("/api/slideshow/:slideshow", async (req, res) => {
         list = (await sql.query("SELECT * FROM slideshows WHERE id = ?", [req.params.slideshow]))
         if (list.length > 0) {
             list = list[0]
-            let slides = await sql.query("SELECT id, member, position, screentime, name, hash, thumbnail as data FROM slides WHERE member = ? ORDER BY position ASC", [req.params.slideshow])
+            let slides = await sql.query("SELECT id, member, position, screentime, name, hash FROM slides WHERE member = ? ORDER BY position ASC", [req.params.slideshow])
             res.send({
                 "info": list,
                 "slides": slides
@@ -108,6 +108,20 @@ app.get("/api/slideshow/:slideshow", async (req, res) => {
         } else {
             res.send({"error": true})
         }
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+});
+
+app.get("/api/slide/thumbnail/:id", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        let slide = await sql.query("SELECT thumbnail FROM slides WHERE id = ?", req.params.id)
+        var img = Buffer.from(slide[0].thumbnail.replace("data:image/png;base64,", ""), 'base64');
+        res.writeHead(200, {
+          'Content-Type': 'image/png',
+          'Content-Length': img.length
+        });
+        res.end(img); 
     } else {
         res.send({"error": "NotVerified"});
     }
