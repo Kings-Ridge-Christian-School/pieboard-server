@@ -21,6 +21,8 @@
                     Slides
                 </div>
             </div>
+            <div id='groupConfigurationNav'>
+            </div>
         </nav>
       
         <main>
@@ -59,6 +61,19 @@
                 Display Time <input type='number' id='slideshowSlideDisplayTime' class='number'><br>
                 <button id='saveSlideButton'>Save</button><button id='deleteSlideButton'>Delete Slide</button><span class='status' id="saveSlideStatus">&nbsp;</span>
             </div>
+            <div id='groupConfiguration' class='conf'>
+                <h2>Group Settings</h2>
+                Group ID<br><span id='groupID'>null</span><br><br>
+                Name <input type='text' id='groupName' class='text'><br>
+                Devices<br>
+                <div id='deviceList'>
+                </div>
+                Slideshows<br>
+                <div id='groupSlideshowList'>
+                </div>
+                <button id='saveGroupButton'>Save</button><span class='status' id="saveGroupStatus">&nbsp;</span>
+            </div>
+            
         </main>
         <aside>
             Devices <button id='addDeviceButton'>+</button><button id='deleteDeviceButton'>-</button><span class='status' id="addDeviceStatus">&nbsp;</span>
@@ -66,6 +81,9 @@
             </form> 
             Slideshows <button id='addSlideshowButton'>+</button><button id='deleteSlideshowButton'>-</button><span class='status' id="addSlideshowStatus">&nbsp;</span>
             <form id='slideshows'>
+            </form> 
+            Device Groups <button id='addGroupButton'>+</button><button id='deleteGroupButton'>-</button><span class='status' id="addGroupStatus">&nbsp;</span>
+            <form id='groups'>
             </form> 
         </aside>
       </div>

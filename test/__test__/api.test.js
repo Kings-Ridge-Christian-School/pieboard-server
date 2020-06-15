@@ -16,7 +16,7 @@ describe("Testing the PieBoard device API", () => {
 	it("Reading device settings", async () => {
 		const response = await supertest(app).get('/api/device/1');
 		expect(response.status).toBe(200);
-		expect(response.body).toStrictEqual({"authentication": null, "id": 1, "ip": null, "lastSuccess": null, "manifest": null, "name": "Device 1", "port": 3030, "slideshows": []});
+		expect(response.body).toStrictEqual({"authentication": null, "devgroup": null, "id": 1, "ip": null, "lastSuccess": null, "manifest": null, "name": "Device 1", "port": 3030, "slideshows": []});
 	});
 	it("Setting device settings", async () => {
 		const response = await supertest(app).post('/api/device/edit').send({
@@ -32,7 +32,7 @@ describe("Testing the PieBoard device API", () => {
 
 		const response2 = await supertest(app).get('/api/device/1');
 		expect(response2.status).toBe(200);
-		expect(response2.body).toStrictEqual({"authentication": "password", "id": 1, "ip": "localhost", "lastSuccess": null, "manifest": null, "name": "TESTDEVICE", "port": 9999, "slideshows": []});
+		expect(response2.body).toStrictEqual({"authentication": "password", "devgroup": null, "id": 1, "ip": "localhost", "lastSuccess": null, "manifest": null, "name": "TESTDEVICE", "port": 9999, "slideshows": []});
 	
 	});
 
