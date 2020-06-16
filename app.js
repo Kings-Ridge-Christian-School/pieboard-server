@@ -195,6 +195,14 @@ app.post("/api/slide/new", (async (req, res) => {
 
 app.post("/api/slide/move", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
+        let highestpos = await sql.query("SELECT position FROM slides WHERE member = ? ORDER BY position DESC LIMIT 1", req.body.slideshow)
+        highestpos = highestpos[0].position
+        if (req.body.newPos > highestpos+1) {
+            req.body.newPos = highestpos
+        }
+        if (req.body.newPos < 0) {
+            req.body.newPos = 0
+        }
         if (req.body.originalPos > req.body.newPos) {
             let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.newPos, req.body.originalPos])
             for (let slide of toChange) {
@@ -335,6 +343,16 @@ app.post("/api/slideshow/delete", async (req, res) => {
 app.post("/api/device/delete", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         await sql.query("DELETE FROM devices WHERE id = ?", [req.body.id])
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+});
+
+app.post("/api/group/delete", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        await sql.query("DELETE FROM groups WHERE id = ?", req.body.id)
+        await sql.query("UPDATE devices SET devgroup = null WHERE devgroup = ?", req.body.id)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});

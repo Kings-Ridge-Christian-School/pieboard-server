@@ -38,8 +38,7 @@ async function postWithResult(element, url, data) {
             setTimeout(() => {element.innerHTML = "&nbsp;"}, 2000);
             return true
         } else {
-            console.log(result);
-            element.innerHTML = "❌"
+            element.innerHTML = "❌ " + result.error
             return false
         }
     } catch(e) {
@@ -84,6 +83,7 @@ function setState(type) {
         document.getElementById("slideshowConfiguration").style.display = "none"
         document.getElementById("deviceConfiguration").style.display = "none"
         document.getElementById("placeholderNav").style.display = "block"
+        document.getElementById("groupConfiguration").style.display = "none"
         document.getElementById("slideshowConfigurationNav").style.display = "none"
         document.getElementById("deviceConfigurationNav").style.display = "none"
         document.getElementById("groupConfigurationNav").style.display = "none"
@@ -94,6 +94,7 @@ function setState(type) {
 async function addDevice() {
     let res = await postWithResult("addDeviceStatus", "/api/device/new", {});
     if (res) {
+        setState(0);
         init_navigation();
     }
 }
@@ -101,6 +102,7 @@ async function addDevice() {
 async function addSlideshow() {
     let res = await postWithResult("addSlideshowStatus", "/api/slideshow/new", {});
     if (res) {
+        setState(0);
         init_navigation();
     }
 }
@@ -108,6 +110,7 @@ async function addSlideshow() {
 async function addGroup() {
     let res = await postWithResult("addGroupStatus", "/api/group/new", {});
     if (res) {
+        setState(0);
         init_navigation();
     }
 }
@@ -127,6 +130,17 @@ async function deleteSlideshow() {
     let slideshow = findRadio(slideshowdom).id.replace("gm_", "");
     if (confirm("Are you sure you want to delete slideshow " + slideshow + "? It's slides will be deleted as well. This is irreversable!")) {
         res = await postWithResult("addSlideshowStatus", "/api/slideshow/delete", {"id": slideshow});
+        if (res) {
+            setState(0);
+            init_navigation();
+        }
+    }
+}
+
+async function deleteGroup() {
+    let group = findRadio(groupdom).id.replace("mm_", "");
+    if (confirm("Are you sure you want to delete group " + group + "? Each device will remain on the same slideshows, but will be ungrouped!")) {
+        res = await postWithResult("addGroupStatus", "/api/group/delete", {"id": group});
         if (res) {
             setState(0);
             init_navigation();
@@ -352,24 +366,25 @@ function setImage(img) {
     document.getElementById("slideshowSlideID").innerHTML = id
     document.getElementById("slideshowSlideName").value = slideCache[id].name
     document.getElementById("slideshowSlideDisplayTime").value = slideCache[id].screentime
+    document.getElementById("slideshowSlidePosition").value = slideCache[id].position+1
     document.getElementById("slideshowSlideName").disabled = false
     document.getElementById("slideshowSlideDisplayTime").disabled = false
     document.getElementById("saveSlideButton").disabled = false
     document.getElementById("deleteSlideButton").disabled = false
 }
 
-function slideshowProcess(elem, slideshows) { 
+function slideshowProcess(elem, slideshows, name) { 
     for (slideshow in slideshowCache) {
         let container = document.createElement("div")
         let option = document.createElement("input");
         option.type = "checkbox"
         option.className = "g_select"
-        option.id = "gid_" + slideshow
+        option.id = name + "id_" + slideshow
         if (slideshows.includes(slideshow)) {
             option.checked = 1
         }
         let optionLabel = document.createElement("label");
-        optionLabel.htmlFor = "gid_" + slideshow
+        optionLabel.htmlFor = name + "id_" + slideshow
         optionLabel.appendChild(document.createTextNode(slideshowCache[slideshow]));
         container.appendChild(option);
         container.appendChild(optionLabel);
@@ -382,12 +397,12 @@ async function processDeviceChange() {
     deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
     let data = await get("/api/device/" + id);
-    if (data.lastSuccess == 0) {
-        document.getElementById("lastCommunication").innerHTML = "❌ failed"
+    if (data.lastSuccess == -1) {
+        document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
     } else if (data.lastSuccess == null) {
         document.getElementById("lastCommunication").innerHTML = "No communication"
-    } else if (data.lastSuccess == -1) {
-        document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
+    } else if (data.lastSuccess < 0) {
+        document.getElementById("lastCommunication").innerHTML = `❌ failed (last checked at ${new Date(-1*data.lastSuccess).toLocaleString()}`
     } else {
         document.getElementById("lastCommunication").innerHTML = "✅ " + new Date(data.lastSuccess).toLocaleString();
     }
@@ -398,7 +413,7 @@ async function processDeviceChange() {
     document.getElementById("deviceAuth").value = data.authentication;
     document.getElementById("deviceSlideshowList").innerHTML = ""
     console.log(data)
-    slideshowProcess("deviceSlideshowList", data.slideshows)
+    slideshowProcess("deviceSlideshowList", data.slideshows, "g")
     if (data.devgroup != null) {
         let warning = document.createElement("i")
         warning.appendChild(document.createTextNode("This device is in a group, its slideshows cannot be changed here unless removed from the group"));
@@ -433,6 +448,7 @@ async function processSlideshowChange(useCache) {
         let i = 0;
         for (slide in slides) {
             slideCache[slides[slide].id] = slides[slide]
+            slideCache[slides[slide].id].position = i
             let figure = document.createElement("figure");
             let img = document.createElement("img");
             let capt = document.createElement("figcaption");
@@ -523,7 +539,7 @@ async function processGroupChange() {
     document.getElementById("groupID").innerHTML = id
     document.getElementById("groupName").value = data.name;
     document.getElementById("groupSlideshowList").innerHTML = ""
-    slideshowProcess("groupSlideshowList", data.slideshows)
+    slideshowProcess("groupSlideshowList", data.slideshows, "z")
     setState(3)
 }
 
@@ -565,7 +581,8 @@ async function saveSlideshowData() {
 async function saveGroupData() {
     let slideshows = []
     for (slideshow in slideshowCache) {
-        if (document.getElementById("gid_" + slideshow).checked) {
+        if (document.getElementById("zid_" + slideshow).checked) {
+            console.log(document.getElementById("zid_" + slideshow))
             slideshows.push(slideshow.replace("gm_", ""));
         }
     }
@@ -586,15 +603,25 @@ async function saveGroupData() {
     });
 }
 async function saveSlideData() {
+    let id = document.getElementById("slideshowSlideID").innerHTML
     await postWithResult("saveSlideStatus", "/api/slide/edit", {
-        "id": document.getElementById("slideshowSlideID").innerHTML,
+        "id": id,
         "name": document.getElementById("slideshowSlideName").value,
         "screentime": document.getElementById("slideshowSlideDisplayTime").value
     });
-    slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].name = document.getElementById("slideshowSlideName").value
-    slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].screentime = document.getElementById("slideshowSlideDisplayTime").value
 
-    processSlideshowChange(true)
+    if (slideCache[id].position+1 != document.getElementById("slideshowSlidePosition").value) {
+        await postWithResult("saveSlideStatus", "/api/slide/move", {
+            "originalPos": slideCache[id].position,
+            "newPos": document.getElementById("slideshowSlidePosition").value-1,
+            "slideshow": current
+        });
+        processSlideshowChange(false)
+    } else {
+        slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].name = document.getElementById("slideshowSlideName").value
+        slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].screentime = document.getElementById("slideshowSlideDisplayTime").value
+        processSlideshowChange(true)
+    }
 }
 
 async function isReady() {
@@ -612,6 +639,7 @@ async function isReady() {
     document.getElementById("addGroupButton").addEventListener("click", async => {addGroup()});
     document.getElementById("deleteGroupButton").addEventListener("click", async => {deleteGroup()});
     document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
+    document.getElementById("refreshDevice").addEventListener("click", async => {saveDeviceData()});
     await init_navigation(); 
     setState(0);
 }
