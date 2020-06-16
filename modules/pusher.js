@@ -35,7 +35,7 @@ function generateManifestFromData(slides, slideshows, id, auth) {
         "time": new Date(),
         "auth": auth,
         "address": process.env.IP,
-        "port": process.env.PI_PORT || 3000,
+        "port": process.env.PROXY_PORT || process.env.PI_PORT || 3000,
         "id": id,
         "data": []
     }
@@ -89,8 +89,7 @@ async function pushManifest(id) {
                 return true
              }
         } catch(e)  {
-            console.log(e);
-            console.log(id + " is offline!");
+            console.log(`Unable to push to device ${id}!`);
             await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [0, id])
             return false
         }

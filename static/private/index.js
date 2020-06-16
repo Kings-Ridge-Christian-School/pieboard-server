@@ -38,8 +38,7 @@ async function postWithResult(element, url, data) {
             setTimeout(() => {element.innerHTML = "&nbsp;"}, 2000);
             return true
         } else {
-            console.log(result);
-            element.innerHTML = "❌"
+            element.innerHTML = "❌ " + result.error
             return false
         }
     } catch(e) {
@@ -364,6 +363,7 @@ function setImage(img) {
     document.getElementById("slideshowSlideID").innerHTML = id
     document.getElementById("slideshowSlideName").value = slideCache[id].name
     document.getElementById("slideshowSlideDisplayTime").value = slideCache[id].screentime
+    document.getElementById("slideshowSlidePosition").value = slideCache[id].position+1
     document.getElementById("slideshowSlideName").disabled = false
     document.getElementById("slideshowSlideDisplayTime").disabled = false
     document.getElementById("saveSlideButton").disabled = false
@@ -445,6 +445,7 @@ async function processSlideshowChange(useCache) {
         let i = 0;
         for (slide in slides) {
             slideCache[slides[slide].id] = slides[slide]
+            slideCache[slides[slide].id].position = i
             let figure = document.createElement("figure");
             let img = document.createElement("img");
             let capt = document.createElement("figcaption");
@@ -599,15 +600,25 @@ async function saveGroupData() {
     });
 }
 async function saveSlideData() {
+    let id = document.getElementById("slideshowSlideID").innerHTML
     await postWithResult("saveSlideStatus", "/api/slide/edit", {
-        "id": document.getElementById("slideshowSlideID").innerHTML,
+        "id": id,
         "name": document.getElementById("slideshowSlideName").value,
         "screentime": document.getElementById("slideshowSlideDisplayTime").value
     });
-    slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].name = document.getElementById("slideshowSlideName").value
-    slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].screentime = document.getElementById("slideshowSlideDisplayTime").value
 
-    processSlideshowChange(true)
+    if (slideCache[id].position+1 != document.getElementById("slideshowSlidePosition").value) {
+        await postWithResult("saveSlideStatus", "/api/slide/move", {
+            "originalPos": slideCache[id].position,
+            "newPos": document.getElementById("slideshowSlidePosition").value-1,
+            "slideshow": current
+        });
+        processSlideshowChange(false)
+    } else {
+        slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].name = document.getElementById("slideshowSlideName").value
+        slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].screentime = document.getElementById("slideshowSlideDisplayTime").value
+        processSlideshowChange(true)
+    }
 }
 
 async function isReady() {
