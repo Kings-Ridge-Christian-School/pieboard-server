@@ -1,4 +1,5 @@
 let slideshowdom = document.getElementById("slideshows");
+let groupdom = document.getElementById("groups");
 let devicedom = document.getElementById("devices");
 let dropArea = document.getElementById("dropBox");
 let state, current, currentSlideshow, currentDevice, slideCache, deviceCache, slideshowCache, slideRestartCache
@@ -52,17 +53,31 @@ function setState(type) {
         document.getElementById("deviceConfiguration").style.display = "block"
         document.getElementById("slideshowConfiguration").style.display = "none"
         document.getElementById("placeholder").style.display = "none"
+        document.getElementById("groupConfiguration").style.display = "none"
         document.getElementById("deviceConfigurationNav").style.display = "block"
         document.getElementById("slideshowConfigurationNav").style.display = "none"
         document.getElementById("placeholderNav").style.display = "none"
+        document.getElementById("groupConfigurationNav").style.display = "none"
     }
     if (type == 2) {
         document.getElementById("slideshowConfiguration").style.display = "block"
         document.getElementById("deviceConfiguration").style.display = "none"
         document.getElementById("placeholder").style.display = "none"
+        document.getElementById("groupConfiguration").style.display = "none"
         document.getElementById("slideshowConfigurationNav").style.display = "block"
         document.getElementById("deviceConfigurationNav").style.display = "none"
         document.getElementById("placeholderNav").style.display = "none"
+        document.getElementById("groupConfigurationNav").style.display = "none"
+    }
+    if (type == 3) {
+        document.getElementById("slideshowConfiguration").style.display = "none"
+        document.getElementById("deviceConfiguration").style.display = "none"
+        document.getElementById("placeholder").style.display = "none"
+        document.getElementById("groupConfiguration").style.display = "block"
+        document.getElementById("slideshowConfigurationNav").style.display = "none"
+        document.getElementById("deviceConfigurationNav").style.display = "none"
+        document.getElementById("placeholderNav").style.display = "none"
+        document.getElementById("groupConfigurationNav").style.display = "block"
     }
     if (type == 0) {
         document.getElementById("placeholder").style.display = "block"
@@ -71,6 +86,7 @@ function setState(type) {
         document.getElementById("placeholderNav").style.display = "block"
         document.getElementById("slideshowConfigurationNav").style.display = "none"
         document.getElementById("deviceConfigurationNav").style.display = "none"
+        document.getElementById("groupConfigurationNav").style.display = "none"
     }
     state = type
 }
@@ -84,6 +100,13 @@ async function addDevice() {
 
 async function addSlideshow() {
     let res = await postWithResult("addSlideshowStatus", "/api/slideshow/new", {});
+    if (res) {
+        init_navigation();
+    }
+}
+
+async function addGroup() {
+    let res = await postWithResult("addGroupStatus", "/api/group/new", {});
     if (res) {
         init_navigation();
     }
@@ -243,18 +266,20 @@ async function handleMove(e) {
         "newPos": final,
         "slideshow": current
     });
-    slideRestartCache.slides.splice(origin, 0, slideRestartCache.slides.splice(final, 1)[0]);
-    processSlideshowChange(true)
+    processSlideshowChange(false)
 }
 
 async function init_navigation() {
     let devices = await get("/api/devices");
     let slideshows = await get("/api/slideshows");
+    let groups = await get("/api/groups");
     
     devicedom.innerHTML = ""
     slideshowdom.innerHTML = ""
+    groupdom.innerHTML = ""
     slideshowCache = {}
     deviceCache = {}
+    groupCache = {}
     for (device in devices) {
         let container = document.createElement("div");
         let option = document.createElement("input");
@@ -292,6 +317,25 @@ async function init_navigation() {
         container.appendChild(radioName)
         slideshowdom.appendChild(container);
     }
+    for (group in groups) {
+        let container = document.createElement("div");
+        let option = document.createElement("input")
+        option.type = "radio"
+        option.id = "mm_" + groups[group].id
+        option.addEventListener("click", (elem) => {
+            deselectRadio(groupdom)
+            elem.target.checked = true
+        });
+        groupCache[groups[group].id] = groups[group].name
+
+        let radioName = document.createElement("label");
+        radioName.htmlFor = "mm_" + groups[group].id
+
+        radioName.appendChild(document.createTextNode(groups[group].name))
+        container.appendChild(option);
+        container.appendChild(radioName)
+        groupdom.appendChild(container);
+    }
 }
 
 function setImage(img) {
@@ -314,8 +358,28 @@ function setImage(img) {
     document.getElementById("deleteSlideButton").disabled = false
 }
 
+function slideshowProcess(elem, slideshows) { 
+    for (slideshow in slideshowCache) {
+        let container = document.createElement("div")
+        let option = document.createElement("input");
+        option.type = "checkbox"
+        option.className = "g_select"
+        option.id = "gid_" + slideshow
+        if (slideshows.includes(slideshow)) {
+            option.checked = 1
+        }
+        let optionLabel = document.createElement("label");
+        optionLabel.htmlFor = "gid_" + slideshow
+        optionLabel.appendChild(document.createTextNode(slideshowCache[slideshow]));
+        container.appendChild(option);
+        container.appendChild(optionLabel);
+        document.getElementById(elem).appendChild(container);
+    }
+}
+
 async function processDeviceChange() {
     deselectRadio(slideshowdom)
+    deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
     let data = await get("/api/device/" + id);
     if (data.lastSuccess == 0) {
@@ -332,28 +396,23 @@ async function processDeviceChange() {
     document.getElementById("devicePort").value = data.port;
     document.getElementById("deviceName").value = data.name;
     document.getElementById("deviceAuth").value = data.authentication;
-    document.getElementById("devicesSlideshowList").innerHTML = ""
-    for (slideshow in slideshowCache) {
-        let container = document.createElement("div")
-        let option = document.createElement("input");
-        option.type = "checkbox"
-        option.className = "g_select"
-        option.id = "gid_" + slideshow
-        if (data.slideshows.includes(slideshow)) {
-            option.checked = 1
+    document.getElementById("deviceSlideshowList").innerHTML = ""
+    console.log(data)
+    slideshowProcess("deviceSlideshowList", data.slideshows)
+    if (data.devgroup != null) {
+        let warning = document.createElement("i")
+        warning.appendChild(document.createTextNode("This device is in a group, its slideshows cannot be changed here unless removed from the group"));
+        document.getElementById("deviceSlideshowList").prepend(warning)
+        for (let slideshow in slideshowCache) {
+            document.getElementById("gid_" + slideshow).disabled = true
         }
-        let optionLabel = document.createElement("label");
-        optionLabel.htmlFor = "gid_" + slideshow
-        optionLabel.appendChild(document.createTextNode(slideshowCache[slideshow]));
-        container.appendChild(option);
-        container.appendChild(optionLabel);
-        document.getElementById("deviceSlideshowList").appendChild(container);
     }
     setState(1)
 }
 
 async function processSlideshowChange(useCache) {
         deselectRadio(devicedom);
+        deselectRadio(groupdom);
         let id = findRadio(slideshowdom).id.replace("gm_", "");
         dropBox.innerHTML = "<h2>Slides</h2><p>Drag slides here</p><span class='status' id='addSlideStatus'>Loading...</span>"
         setState(2);
@@ -382,7 +441,8 @@ async function processSlideshowChange(useCache) {
             figure._id = i
             img.id = slides[slide].id
             capt.id = slides[slide].id
-            img.setAttribute("src", slides[slide].data);
+            img.setAttribute("loading", "lazy")
+            img.setAttribute("src", `/api/slide/thumbnail/${slides[slide].id}`);
             capt.appendChild(document.createTextNode(slides[slide].name));
 
             figure.appendChild(img);
@@ -432,6 +492,41 @@ async function processSlideshowChange(useCache) {
         document.getElementById("deleteSlideButton").disabled = true
 }
 
+async function processGroupChange() {
+    deselectRadio(devicedom);
+    deselectRadio(slideshowdom);
+    let id = findRadio(groupdom).id.replace("mm_", "");
+    let data = await get("/api/group/" + id);
+    document.getElementById("deviceList").innerHTML = ""
+    for (let device of data.devices) {
+        let container = document.createElement("div")
+        let option = document.createElement("input");
+        option.type = "checkbox"
+        option.className = "m_select"
+        option.id = "mid_" + device.id
+        if (device.devgroup == id) {
+            option.checked = 1
+        } else if (device.devgroup != null) {
+            option.disabled = true
+        }
+        let optionLabel = document.createElement("label");
+        optionLabel.htmlFor = "mid_" + slideshow
+        optionLabel.appendChild(document.createTextNode(device.name));
+        if (data.devgroup != null) {
+            option.disabled = true
+            optionLabel.disabled = true
+        }
+        container.appendChild(option);
+        container.appendChild(optionLabel);
+        document.getElementById("deviceList").appendChild(container);
+    }
+    document.getElementById("groupID").innerHTML = id
+    document.getElementById("groupName").value = data.name;
+    document.getElementById("groupSlideshowList").innerHTML = ""
+    slideshowProcess("groupSlideshowList", data.slideshows)
+    setState(3)
+}
+
 async function saveDeviceData() {
     let slideshows = []
     for (slideshow in slideshowCache) {
@@ -467,6 +562,29 @@ async function saveSlideshowData() {
     await init_navigation()
     document.getElementById("gm_" + document.getElementById("slideshowID").innerHTML).checked = true
 }
+async function saveGroupData() {
+    let slideshows = []
+    for (slideshow in slideshowCache) {
+        if (document.getElementById("gid_" + slideshow).checked) {
+            slideshows.push(slideshow.replace("gm_", ""));
+        }
+    }
+    let devices = []
+    console.log(deviceCache)
+    for (device in deviceCache) {
+        if (document.getElementById("mid_" + device.split("_")[1]).checked) {
+            devices.push(device.split("_")[1]);
+        }
+    }
+    console.log(slideshows, devices)
+
+    await postWithResult("saveGroupStatus", "/api/group/edit", {
+        "id": document.getElementById("groupID").innerHTML,
+        "name": document.getElementById("groupName").value,
+        "devices": devices,
+        "slideshows": slideshows
+    });
+}
 async function saveSlideData() {
     await postWithResult("saveSlideStatus", "/api/slide/edit", {
         "id": document.getElementById("slideshowSlideID").innerHTML,
@@ -482,6 +600,7 @@ async function saveSlideData() {
 async function isReady() {
     devicedom.addEventListener("change", async () => processDeviceChange());
     slideshowdom.addEventListener("change", async () => processSlideshowChange(false));
+    groupdom.addEventListener("change", async () => processGroupChange());
     document.getElementById("saveDeviceButton").addEventListener("click", async => {saveDeviceData()});
     document.getElementById("saveSlideshowButton").addEventListener("click", async => {saveSlideshowData()});
     document.getElementById("saveSlideButton").addEventListener("click", async => {saveSlideData()});
@@ -490,6 +609,9 @@ async function isReady() {
     document.getElementById("deleteDeviceButton").addEventListener("click", async => {deleteDevice()});
     document.getElementById("deleteSlideshowButton").addEventListener("click", async => {deleteSlideshow()});
     document.getElementById("deleteSlideButton").addEventListener("click", async => {deleteSlide()});
+    document.getElementById("addGroupButton").addEventListener("click", async => {addGroup()});
+    document.getElementById("deleteGroupButton").addEventListener("click", async => {deleteGroup()});
+    document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
     await init_navigation(); 
     setState(0);
 }

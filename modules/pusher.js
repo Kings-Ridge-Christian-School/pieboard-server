@@ -84,7 +84,7 @@ async function pushManifest(id) {
                 await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [-1, id])
                 return false
              } else {
-                console.log("Pushed updated manifest to " + id);
+                if (process.env.TEST_ENV != 1) console.log("Pushed updated manifest to " + id);
                 await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), id])
                 return true
              }

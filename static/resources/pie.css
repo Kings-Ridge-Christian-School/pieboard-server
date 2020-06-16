@@ -140,6 +140,9 @@ div.conf input.number {
 div.conf input.g_select {
     display: inline;
 }
+div.conf input.m_select {
+    display: inline;
+}
 
 input:disabled {
     background-color: lightgray;
