@@ -341,6 +341,16 @@ app.post("/api/device/delete", async (req, res) => {
     }
 });
 
+app.post("/api/group/delete", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        await sql.query("DELETE FROM groups WHERE id = ?", req.body.id)
+        await sql.query("UPDATE devices SET devgroup = null WHERE devgroup = ?", req.body.id)
+        res.send({"error": false});
+    } else {
+        res.send({"error": "NotVerified"});
+    }
+});
+
 
 let port = process.env.PI_PORT || 3000
 if (process.env.TEST_ENV == 1) port = null

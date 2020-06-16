@@ -84,6 +84,7 @@ function setState(type) {
         document.getElementById("slideshowConfiguration").style.display = "none"
         document.getElementById("deviceConfiguration").style.display = "none"
         document.getElementById("placeholderNav").style.display = "block"
+        document.getElementById("groupConfiguration").style.display = "none"
         document.getElementById("slideshowConfigurationNav").style.display = "none"
         document.getElementById("deviceConfigurationNav").style.display = "none"
         document.getElementById("groupConfigurationNav").style.display = "none"
@@ -127,6 +128,17 @@ async function deleteSlideshow() {
     let slideshow = findRadio(slideshowdom).id.replace("gm_", "");
     if (confirm("Are you sure you want to delete slideshow " + slideshow + "? It's slides will be deleted as well. This is irreversable!")) {
         res = await postWithResult("addSlideshowStatus", "/api/slideshow/delete", {"id": slideshow});
+        if (res) {
+            setState(0);
+            init_navigation();
+        }
+    }
+}
+
+async function deleteGroup() {
+    let group = findRadio(groupdom).id.replace("mm_", "");
+    if (confirm("Are you sure you want to delete group " + group + "? Each device will remain on the same slideshows, but will be ungrouped!")) {
+        res = await postWithResult("addGroupStatus", "/api/group/delete", {"id": group});
         if (res) {
             setState(0);
             init_navigation();
@@ -358,18 +370,18 @@ function setImage(img) {
     document.getElementById("deleteSlideButton").disabled = false
 }
 
-function slideshowProcess(elem, slideshows) { 
+function slideshowProcess(elem, slideshows, name) { 
     for (slideshow in slideshowCache) {
         let container = document.createElement("div")
         let option = document.createElement("input");
         option.type = "checkbox"
         option.className = "g_select"
-        option.id = "gid_" + slideshow
+        option.id = name + "id_" + slideshow
         if (slideshows.includes(slideshow)) {
             option.checked = 1
         }
         let optionLabel = document.createElement("label");
-        optionLabel.htmlFor = "gid_" + slideshow
+        optionLabel.htmlFor = name + "id_" + slideshow
         optionLabel.appendChild(document.createTextNode(slideshowCache[slideshow]));
         container.appendChild(option);
         container.appendChild(optionLabel);
@@ -398,7 +410,7 @@ async function processDeviceChange() {
     document.getElementById("deviceAuth").value = data.authentication;
     document.getElementById("deviceSlideshowList").innerHTML = ""
     console.log(data)
-    slideshowProcess("deviceSlideshowList", data.slideshows)
+    slideshowProcess("deviceSlideshowList", data.slideshows, "g")
     if (data.devgroup != null) {
         let warning = document.createElement("i")
         warning.appendChild(document.createTextNode("This device is in a group, its slideshows cannot be changed here unless removed from the group"));
@@ -523,7 +535,7 @@ async function processGroupChange() {
     document.getElementById("groupID").innerHTML = id
     document.getElementById("groupName").value = data.name;
     document.getElementById("groupSlideshowList").innerHTML = ""
-    slideshowProcess("groupSlideshowList", data.slideshows)
+    slideshowProcess("groupSlideshowList", data.slideshows, "z")
     setState(3)
 }
 
@@ -565,7 +577,8 @@ async function saveSlideshowData() {
 async function saveGroupData() {
     let slideshows = []
     for (slideshow in slideshowCache) {
-        if (document.getElementById("gid_" + slideshow).checked) {
+        if (document.getElementById("zid_" + slideshow).checked) {
+            console.log(document.getElementById("zid_" + slideshow))
             slideshows.push(slideshow.replace("gm_", ""));
         }
     }
