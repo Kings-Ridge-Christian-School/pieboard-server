@@ -94,6 +94,7 @@ function setState(type) {
 async function addDevice() {
     let res = await postWithResult("addDeviceStatus", "/api/device/new", {});
     if (res) {
+        setState(0);
         init_navigation();
     }
 }
@@ -101,6 +102,7 @@ async function addDevice() {
 async function addSlideshow() {
     let res = await postWithResult("addSlideshowStatus", "/api/slideshow/new", {});
     if (res) {
+        setState(0);
         init_navigation();
     }
 }
@@ -108,6 +110,7 @@ async function addSlideshow() {
 async function addGroup() {
     let res = await postWithResult("addGroupStatus", "/api/group/new", {});
     if (res) {
+        setState(0);
         init_navigation();
     }
 }
@@ -394,12 +397,12 @@ async function processDeviceChange() {
     deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
     let data = await get("/api/device/" + id);
-    if (data.lastSuccess == 0) {
-        document.getElementById("lastCommunication").innerHTML = "❌ failed"
+    if (data.lastSuccess == -1) {
+        document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
     } else if (data.lastSuccess == null) {
         document.getElementById("lastCommunication").innerHTML = "No communication"
-    } else if (data.lastSuccess == -1) {
-        document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
+    } else if (data.lastSuccess < 0) {
+        document.getElementById("lastCommunication").innerHTML = `❌ failed (last checked at ${new Date(-1*data.lastSuccess).toLocaleString()}`
     } else {
         document.getElementById("lastCommunication").innerHTML = "✅ " + new Date(data.lastSuccess).toLocaleString();
     }
@@ -636,6 +639,7 @@ async function isReady() {
     document.getElementById("addGroupButton").addEventListener("click", async => {addGroup()});
     document.getElementById("deleteGroupButton").addEventListener("click", async => {deleteGroup()});
     document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
+    document.getElementById("refreshDevice").addEventListener("click", async => {saveDeviceData()});
     await init_navigation(); 
     setState(0);
 }
