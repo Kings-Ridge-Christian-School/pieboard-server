@@ -14,6 +14,12 @@
                 <h2>Device Info</h2>
                 <b>Last Communication:</b><br>
                 <div id='lastCommunication'>null</div>
+                <div id='devInfoBox'>
+                    <b>Device Warnings:</b><br>
+                    <div id='deviceWarnings'>None</div>
+                    <br><b>Last Refreshed:</b><br>
+                    <span id='successTime'></i>
+                </div>
                 <button id='refreshDevice'>Refresh device</button>
             </div>
 
@@ -45,7 +51,7 @@
                 <i>Note: this does not change the device's PORT, it changes what port the server tries to access the device!</i><br><br>
                 Authentication<input type='password' id='deviceAuth' class='text'>
                 <i>Note: this does not change the device's authentication, it changes what code the server uses to authenticate with the device!</i><br><br>
-
+                <button id='rebootDevice'>Reboot device</button>
             </div>
 
             <div id='slideshowConfiguration' class='conf'>

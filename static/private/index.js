@@ -226,6 +226,7 @@ async function handleDrop(e) {
         });
     }
     if (internalDrag == false) {
+        document.getElementById("addSlideStatus").innerHTML =  `0/${files.length} Uploaded`
         let dt = e.dataTransfer
         let files = dt.files
         for (file_number in files) {
@@ -397,15 +398,7 @@ async function processDeviceChange() {
     deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
     let data = await get("/api/device/" + id);
-    if (data.lastSuccess == -1) {
-        document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
-    } else if (data.lastSuccess == null) {
-        document.getElementById("lastCommunication").innerHTML = "No communication"
-    } else if (data.lastSuccess < 0) {
-        document.getElementById("lastCommunication").innerHTML = `❌ failed (last checked at ${new Date(-1*data.lastSuccess).toLocaleString()}`
-    } else {
-        document.getElementById("lastCommunication").innerHTML = "✅ " + new Date(data.lastSuccess).toLocaleString();
-    }
+    refreshDevice()
     document.getElementById("deviceID").innerHTML = id
     document.getElementById("deviceIP").value = data.ip;
     document.getElementById("devicePort").value = data.port;
@@ -543,6 +536,46 @@ async function processGroupChange() {
     setState(3)
 }
 
+async function refreshDevice() {
+    document.getElementById("devInfoBox").style.display = "none"
+    let id = findRadio(devicedom).id.replace("dm_", "");
+    let data = await get("/api/device/test/" + id);
+    if (data.devError == false) {
+        if (data.response.error) {
+            document.getElementById("lastCommunication").innerHTML = "❌ password incorrect!"
+        } else {
+            document.getElementById("devInfoBox").style.display = "block"
+            document.getElementById("lastCommunication").innerHTML = "✅ Successful"
+            let warnings = ""
+            for (let warning of data.response.warns) {
+                switch(warning) {
+                    case "NOPASSWORD":
+                        warnings += "⚠️ No password set<br>"
+                        break;
+                    case "NOSLIDE":
+                        warnings += "⚠️ No slides loaded<br>"
+                        break;
+                    case "CPROC":
+                        warnings += "⚠️ Currently loading slides<br>"
+                        break;
+                }
+            }
+            document.getElementById("deviceWarnings").innerHTML = warnings
+            document.getElementById("successTime").innerHTML = new Date().toLocaleString()
+        }
+    } else {
+        document.getElementById("lastCommunication").innerHTML = `❌ failed (last checked at ${new Date(-1*data.response).toLocaleString()}`
+    }
+}
+
+async function rebootDevice() {
+    if (confirm('Are you sure you want to reboot the device?')) {
+        await postWithResult("saveDeviceStatus", "/api/device/reboot", {
+            id: document.getElementById("deviceID").innerHTML
+        });
+    }
+}
+
 async function saveDeviceData() {
     let slideshows = []
     for (slideshow in slideshowCache) {
@@ -639,7 +672,8 @@ async function isReady() {
     document.getElementById("addGroupButton").addEventListener("click", async => {addGroup()});
     document.getElementById("deleteGroupButton").addEventListener("click", async => {deleteGroup()});
     document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
-    document.getElementById("refreshDevice").addEventListener("click", async => {saveDeviceData()});
+    document.getElementById("refreshDevice").addEventListener("click", async => {refreshDevice()});
+    document.getElementById("rebootDevice").addEventListener("click", async => {rebootDevice()});
     await init_navigation(); 
     setState(0);
 }

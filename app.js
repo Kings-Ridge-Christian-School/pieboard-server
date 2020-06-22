@@ -282,8 +282,38 @@ app.get("/api/slide/get/:id", async (req, res) => {
 });
 
 app.get("/api/device/refresh/:id", async (req, res) => {
-    pusher.pushManifest(req.params.id)
-    res.send({"res": 0})
+    if (await auth.isVerified(req.signedCookies)) {
+        pusher.pushManifest(req.params.id)
+        res.send({"res": 0})
+    }
+});
+
+app.get("/api/device/test/:id", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        let data = await sql.query("SELECT ip, port, lastSuccess, authentication FROM devices WHERE id = ?", [req.params.id])
+        try {
+            let resp = await pusher.get(`http://${data[0].ip}:${data[0].port}/status?auth=${data[0].authentication}`);
+            if (resp.error == "auth") await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [-1, req.params.id])
+            else await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), req.params.id])
+            res.send({devError: false, response:resp})
+        } catch(e)  {
+            res.send({devError: true, response: data[0].lastSuccess})
+            await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date()*-1, req.params.id])
+        }
+    }
+});
+
+app.post("/api/device/reboot", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        let data = await sql.query("SELECT ip, port, authentication FROM devices WHERE id = ?", [req.body.id])
+        try {
+            let resp = await pusher.post(`http://${data[0].ip}:${data[0].port}/reboot`, {"auth": data[0].authentication});
+            res.send({error: false})
+        } catch(e)  {
+            console.log(e)
+            res.send({error: true})
+        }
+    }
 });
 
 app.get("/api/device/getnonce/:id", async (req, res) => {
@@ -362,7 +392,7 @@ app.post("/api/group/delete", async (req, res) => {
 
 let port = process.env.PI_PORT || 3000
 if (process.env.TEST_ENV == 1) port = null
-let server = app.listen(port, () => {if (process.env.TEST_ENV != 1)console.log(`PieBoard Server Host listening on port ${process.env.PI_PORT}!`)})
+let server = app.listen(port, () => {if (process.env.TEST_ENV != 1)console.log(`PieBoard Server Host listening on port ${port}!`)})
 
 function stop() {
     server.close()
