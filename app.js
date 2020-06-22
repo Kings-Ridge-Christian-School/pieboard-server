@@ -303,6 +303,19 @@ app.get("/api/device/test/:id", async (req, res) => {
     }
 });
 
+app.post("/api/device/reboot", async (req, res) => {
+    if (await auth.isVerified(req.signedCookies)) {
+        let data = await sql.query("SELECT ip, port, authentication FROM devices WHERE id = ?", [req.body.id])
+        try {
+            let resp = await pusher.post(`http://${data[0].ip}:${data[0].port}/reboot`, {"auth": data[0].authentication});
+            res.send({error: false})
+        } catch(e)  {
+            console.log(e)
+            res.send({error: true})
+        }
+    }
+});
+
 app.get("/api/device/getnonce/:id", async (req, res) => {
     let info = await sql.query("SELECT manifest FROM devices WHERE id = ?", [req.params.id])
     if (info[0].manifest != null) {

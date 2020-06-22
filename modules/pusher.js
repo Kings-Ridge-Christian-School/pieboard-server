@@ -122,3 +122,4 @@ exports.generateManifestFromID = generateManifestFromID
 exports.pushManifest = pushManifest
 exports.updateDevicesWithSlideshow = updateDevicesWithSlideshow
 exports.get = get
+exports.post = post

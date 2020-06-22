@@ -568,6 +568,14 @@ async function refreshDevice() {
     }
 }
 
+async function rebootDevice() {
+    if (confirm('Are you sure you want to reboot the device?')) {
+        await postWithResult("saveDeviceStatus", "/api/device/reboot", {
+            id: document.getElementById("deviceID").innerHTML
+        });
+    }
+}
+
 async function saveDeviceData() {
     let slideshows = []
     for (slideshow in slideshowCache) {
@@ -665,6 +673,7 @@ async function isReady() {
     document.getElementById("deleteGroupButton").addEventListener("click", async => {deleteGroup()});
     document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
     document.getElementById("refreshDevice").addEventListener("click", async => {refreshDevice()});
+    document.getElementById("rebootDevice").addEventListener("click", async => {rebootDevice()});
     await init_navigation(); 
     setState(0);
 }
