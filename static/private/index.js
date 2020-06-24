@@ -2,7 +2,7 @@ let slideshowdom = document.getElementById("slideshows");
 let groupdom = document.getElementById("groups");
 let devicedom = document.getElementById("devices");
 let dropArea = document.getElementById("dropBox");
-let state, current, currentSlideshow, currentDevice, slideCache, deviceCache, slideshowCache, slideRestartCache
+let state, current, currentSlideshow, currentDevice, slideCache, deviceCache, slideshowCache, slideRestartCache, blockLock
 let internalDrag = false
 function get(url) {
     return new Promise(async (resolve) => {
@@ -26,6 +26,23 @@ function post(url, data) {
         });
         resolve(response.json());
     });
+}
+function blockAccess() {
+    let blockLockSelf = Math.random()
+    blockLock = blockLockSelf
+    document.getElementById("loader").style.display = "block"
+    setTimeout(() => {
+        if (blockLock == blockLockSelf) {
+            if (confirm("The server isn't responding, would you like to reload?")) {
+                location.reload()
+            }
+        }
+    }, 10000);
+}
+
+function allowAccess() {
+    blockLock = null
+    document.getElementById("loader").style.display = "none"
 }
 
 async function postWithResult(element, url, data) {
@@ -394,6 +411,7 @@ function slideshowProcess(elem, slideshows, name) {
 }
 
 async function processDeviceChange() {
+    blockAccess()
     deselectRadio(slideshowdom)
     deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
@@ -416,9 +434,11 @@ async function processDeviceChange() {
         }
     }
     setState(1)
+    allowAccess()
 }
 
 async function processSlideshowChange(useCache) {
+        blockAccess()
         deselectRadio(devicedom);
         deselectRadio(groupdom);
         let id = findRadio(slideshowdom).id.replace("gm_", "");
@@ -499,9 +519,11 @@ async function processSlideshowChange(useCache) {
         document.getElementById("slideshowSlideDisplayTime").disabled = true
         document.getElementById("saveSlideButton").disabled = true
         document.getElementById("deleteSlideButton").disabled = true
+        allowAccess()
 }
 
 async function processGroupChange() {
+    blockAccess()
     deselectRadio(devicedom);
     deselectRadio(slideshowdom);
     let id = findRadio(groupdom).id.replace("mm_", "");
@@ -534,11 +556,13 @@ async function processGroupChange() {
     document.getElementById("groupSlideshowList").innerHTML = ""
     slideshowProcess("groupSlideshowList", data.slideshows, "z")
     setState(3)
+    allowAccess()
 }
 
 async function refreshDevice() {
     document.getElementById("devInfoBox").style.display = "none"
     let id = findRadio(devicedom).id.replace("dm_", "");
+    document.getElementById("lastCommunication").innerHTML = "⌛ Checking"
     let data = await get("/api/device/test/" + id);
     if (data.devError == false) {
         if (data.response.error) {
@@ -560,6 +584,7 @@ async function refreshDevice() {
                         break;
                 }
             }
+            if (warnings == "") warnings = "✅ None<br>"
             document.getElementById("deviceWarnings").innerHTML = warnings
             document.getElementById("successTime").innerHTML = new Date().toLocaleString()
         }

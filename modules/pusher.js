@@ -4,11 +4,14 @@ const md5 = require('md5')
 require('dotenv').config()
 
 function get(url) {
-    return new Promise(async (resolve) => {
+    return new Promise(async (resolve, reject) => {
         if (process.env.TEST_ENV == 1) resolve({})
         else {
-            let response = await fetch(url);
-            resolve(response.json());
+            fetch(url).then((res) => {
+                resolve(res.json)
+            }).catch((err) => {
+                reject(err)
+            });
         }
     });
 }
