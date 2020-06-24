@@ -2,7 +2,7 @@
 const ActiveDirectory = require('activedirectory');
 require('dotenv').config()
 
-
+const CACHE_TIME = process.env.CACHE_TIME || 60
 const config = { url: process.env.AD_URL,
     baseDN: process.env.AD_BASEDN,
     username: process.env.AD_USERNAME,
@@ -13,11 +13,35 @@ var ad = new ActiveDirectory(config);
 
 var tmpUserDB = {}
 
+let adCache = {}
+
+function allowedByCache(username, group) {
+    if (adCache[username] != null) {
+        if (adCache[username].expire > new Date()) {
+            if (adCache[username].group == group) {
+                return true
+            } else return false
+        } else return false
+    } else return false
+}
+
 function inGroup(username) {
     return new Promise(async (resolve) => {
-        ad.isUserMemberOf(username, authGroup, (err, auth) => {
-            auth ? resolve(true) : resolve(false)
-        });
+        if (allowedByCache(username, authGroup)) {
+            resolve(true)
+        } else {
+            ad.isUserMemberOf(username, authGroup, (err, auth) => {
+                if (auth) {
+                    let exp = new Date()
+                    exp.setSeconds(exp.getSeconds() + CACHE_TIME);
+                    adCache[username] = {
+                        "expire": exp,
+                        "group": authGroup
+                    }
+                    resolve(true)
+                } else resolve(false)
+            });
+        }
     });
 }
 

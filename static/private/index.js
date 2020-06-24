@@ -2,7 +2,7 @@ let slideshowdom = document.getElementById("slideshows");
 let groupdom = document.getElementById("groups");
 let devicedom = document.getElementById("devices");
 let dropArea = document.getElementById("dropBox");
-let state, current, currentSlideshow, currentDevice, slideCache, deviceCache, slideshowCache, slideRestartCache
+let state, current, currentSlideshow, currentDevice, slideCache, deviceCache, slideshowCache, slideRestartCache, blockLock
 let internalDrag = false
 function get(url) {
     return new Promise(async (resolve) => {
@@ -27,12 +27,21 @@ function post(url, data) {
         resolve(response.json());
     });
 }
-
 function blockAccess() {
+    let blockLockSelf = Math.random()
+    blockLock = blockLockSelf
     document.getElementById("loader").style.display = "block"
+    setTimeout(() => {
+        if (blockLock == blockLockSelf) {
+            if (confirm("The server isn't responding, would you like to reload?")) {
+                location.reload()
+            }
+        }
+    }, 10000);
 }
 
 function allowAccess() {
+    blockLock = null
     document.getElementById("loader").style.display = "none"
 }
 
