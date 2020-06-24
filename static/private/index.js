@@ -539,6 +539,7 @@ async function processGroupChange() {
 async function refreshDevice() {
     document.getElementById("devInfoBox").style.display = "none"
     let id = findRadio(devicedom).id.replace("dm_", "");
+    document.getElementById("lastCommunication").innerHTML = "⌛ Checking"
     let data = await get("/api/device/test/" + id);
     if (data.devError == false) {
         if (data.response.error) {
@@ -560,6 +561,7 @@ async function refreshDevice() {
                         break;
                 }
             }
+            if (warnings == "") warnings = "✅ None<br>"
             document.getElementById("deviceWarnings").innerHTML = warnings
             document.getElementById("successTime").innerHTML = new Date().toLocaleString()
         }

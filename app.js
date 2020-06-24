@@ -291,15 +291,14 @@ app.get("/api/device/refresh/:id", async (req, res) => {
 app.get("/api/device/test/:id", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
         let data = await sql.query("SELECT ip, port, lastSuccess, authentication FROM devices WHERE id = ?", [req.params.id])
-        try {
-            let resp = await pusher.get(`http://${data[0].ip}:${data[0].port}/status?auth=${data[0].authentication}`);
-            if (resp.error == "auth") await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [-1, req.params.id])
-            else await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), req.params.id])
+        pusher.get(`http://${data[0].ip}:${data[0].port}/status?auth=${data[0].authentication}`).then((resp) => {
+            if (resp.error == "auth") sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [-1, req.params.id])
+            else sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), req.params.id])
             res.send({devError: false, response:resp})
-        } catch(e)  {
+          }).catch((error) => {
             res.send({devError: true, response: data[0].lastSuccess})
-            await sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date()*-1, req.params.id])
-        }
+            sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date()*-1, req.params.id])
+          });
     }
 });
 
