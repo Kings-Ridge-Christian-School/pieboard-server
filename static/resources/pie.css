@@ -2,6 +2,7 @@ body {
     font-family: 'Open Sans', sans-serif;
     padding: 0;
     margin: 0;
+    overflow: hidden;
 }
 
 form.loginPanel {
@@ -171,4 +172,18 @@ input:disabled {
     margin: 3px;
     text-align: center;
     padding: 50px;
+}
+
+#loader {
+    display: none;
+    position: absolute;
+    background: white;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    opacity: 75%;
+    width: calc(100% - 500px - 20px);
+    /*
+    100%, subtracted by both side bars, subtracted by the padding of the two side bars
+    */
 }

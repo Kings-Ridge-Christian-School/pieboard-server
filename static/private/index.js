@@ -28,6 +28,14 @@ function post(url, data) {
     });
 }
 
+function blockAccess() {
+    document.getElementById("loader").style.display = "block"
+}
+
+function allowAccess() {
+    document.getElementById("loader").style.display = "none"
+}
+
 async function postWithResult(element, url, data) {
     element = document.getElementById(element);
     element.innerHTML = "⌛"
@@ -394,6 +402,7 @@ function slideshowProcess(elem, slideshows, name) {
 }
 
 async function processDeviceChange() {
+    blockAccess()
     deselectRadio(slideshowdom)
     deselectRadio(groupdom)
     let id = findRadio(devicedom).id.replace("dm_", "");
@@ -416,9 +425,11 @@ async function processDeviceChange() {
         }
     }
     setState(1)
+    allowAccess()
 }
 
 async function processSlideshowChange(useCache) {
+        blockAccess()
         deselectRadio(devicedom);
         deselectRadio(groupdom);
         let id = findRadio(slideshowdom).id.replace("gm_", "");
@@ -499,9 +510,11 @@ async function processSlideshowChange(useCache) {
         document.getElementById("slideshowSlideDisplayTime").disabled = true
         document.getElementById("saveSlideButton").disabled = true
         document.getElementById("deleteSlideButton").disabled = true
+        allowAccess()
 }
 
 async function processGroupChange() {
+    blockAccess()
     deselectRadio(devicedom);
     deselectRadio(slideshowdom);
     let id = findRadio(groupdom).id.replace("mm_", "");
@@ -534,6 +547,7 @@ async function processGroupChange() {
     document.getElementById("groupSlideshowList").innerHTML = ""
     slideshowProcess("groupSlideshowList", data.slideshows, "z")
     setState(3)
+    allowAccess()
 }
 
 async function refreshDevice() {
