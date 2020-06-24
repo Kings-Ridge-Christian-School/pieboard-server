@@ -8,7 +8,7 @@ function get(url) {
         if (process.env.TEST_ENV == 1) resolve({})
         else {
             fetch(url).then((res) => {
-                resolve(res.json)
+                resolve(res.json())
             }).catch((err) => {
                 reject(err)
             });
