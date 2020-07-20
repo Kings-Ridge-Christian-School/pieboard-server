@@ -243,9 +243,9 @@ async function handleDrop(e) {
         });
     }
     if (internalDrag == false) {
-        document.getElementById("addSlideStatus").innerHTML =  `0/${files.length} Uploaded`
         let dt = e.dataTransfer
         let files = dt.files
+        document.getElementById("addSlideStatus").innerHTML =  `0/${files.length} Uploaded`
         for (file_number in files) {
             let file = files[file_number]
             if (file.type != null) { 
