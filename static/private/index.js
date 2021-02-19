@@ -168,7 +168,7 @@ async function deleteGroup() {
 async function deleteSlide() {
     let slide = document.getElementById("slideshowSlideID").innerHTML
     if (confirm("Are you sure you want to delete slide " + slide + "? This is irreversable!")) {
-        res = await postWithResult("addSlideshowStatus", "/api/slide/delete", {"id": slide});
+        res = await postWithResult("addSlideshowStatus", "/api/slide/delete", {"id": slide, "member": document.getElementById("slideshowID").innerHTML});
         if (res) {
             delete slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == slide)]
             slideRestartCache.slides = slideRestartCache.slides.filter((el) => el != null);
@@ -459,19 +459,19 @@ async function processSlideshowChange(useCache) {
         dropZone.appendChild(document.createTextNode("Move here"));
         dropBox.appendChild(dropZone)
         let i = 0;
-        for (slide in slides) {
-            slideCache[slides[slide].id] = slides[slide]
-            slideCache[slides[slide].id].position = i
+        for (let slide of data.order) {
+            slideCache[slide] = slides[slide]
+            slideCache[slide].position = i
             let figure = document.createElement("figure");
             let img = document.createElement("img");
             let capt = document.createElement("figcaption");
             figure.className = "g_fig"
-            figure.id = "g_fislideshowID_" + slides[slide].id
+            figure.id = "g_fislideshowID_" + slide
             figure._id = i
-            img.id = slides[slide].id
-            capt.id = slides[slide].id
+            img.id = slide
+            capt.id = slide
             img.setAttribute("loading", "lazy")
-            img.setAttribute("src", `/api/slide/thumbnail/${slides[slide].id}`);
+            img.setAttribute("src", `/api/slide/thumbnail/${slide}`);
             capt.appendChild(document.createTextNode(slides[slide].name));
 
             figure.appendChild(img);
@@ -496,8 +496,8 @@ async function processSlideshowChange(useCache) {
         }
         document.getElementById("addSlideStatus").innerHTML = ""
         document.getElementById("slideshowID").innerHTML = current
-        document.getElementById("slideshowName").value = data.info.name
-        if (data.info.expire == "0") {
+        document.getElementById("slideshowName").value = data.name
+        if (data.expire == "0") {
             document.getElementById("slideshowExpireDate").disabled = true
             document.getElementById("slideshowExpireTime").disabled = true
             document.getElementById("slideshowExpireCheckbox").checked = true

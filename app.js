@@ -3,17 +3,68 @@ const fs = require('fs')
 const app = express()
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser')
-const md5 = require('md5')
+const uuid = require("uuid")
+const md5 = require("md5")
 app.use(cookieParser("secret"));
 app.use(bodyParser.json({limit: '2gb', extended: true}))
 app.use(bodyParser.urlencoded({limit: '2gb', extended: true}))
 require('dotenv').config()
 
-const sql = require("./modules/sqlite.js")
+
+const w = require("./modules/json.js")
 const auth = require("./modules/authenticator.js")
 const pusher = require("./modules/pusher.js")
 
 const dir = __dirname + "/static/"
+
+
+class Device {
+    constructor() {
+        this.schema = 1
+        this.id = uuid.v4()
+        this.name = `Device ${this.id.substring(0,5)}`
+        this.devgroup = null
+        this.slideshows = []
+        this.port = 3030
+        this.authentication = ""
+        this.ip = ""
+        this.manifest = 0
+    }
+}
+
+class Slideshow {
+    constructor() {
+        this.schema = 1
+        this.id = uuid.v4()
+        this.name = `Slideshow ${this.id.substring(0,5)}`
+        this.expire = 0
+        this.slides = {}
+        this.order = []
+    }
+}
+
+class Slide {
+    constructor(name, hash, extension) {
+        this.schema = 1
+        this.id = uuid.v4()
+        this.name = name || `Slide ${this.id.substring(0,5)}`
+        this.expire = 0
+        this.screentime = process.env.DEFAULT_TIME || 10
+        this.hash = hash
+        this.type = extension
+    }
+}
+
+class Group {
+    constructor() {
+        this.schema = 1
+        this.id = uuid.v4()
+        this.name = `Group ${this.id.substring(0,5)}`
+        this.devices = []
+        this.slideshows = []
+    }
+}
+
 
 app.use('/static', express.static('static/resources'))
 
@@ -65,7 +116,7 @@ app.get("/", async (req, res) => {
 
 app.get("/api/devices", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        res.send(await sql.query("SELECT name, id FROM devices"))
+        res.send(await w.getList('data/devices', ["id", "name"]));
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -73,7 +124,7 @@ app.get("/api/devices", async (req, res) => {
 
 app.get("/api/slideshows", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        res.send(await sql.query("SELECT name, id FROM slideshows"))
+        res.send(await w.getList('data/slideshows', ["id", "name"]));
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -81,7 +132,7 @@ app.get("/api/slideshows", async (req, res) => {
 
 app.get("/api/groups", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        res.send(await sql.query("SELECT name, id FROM groups"))
+        res.send(await w.getList('data/groups', ["id", "name"]))
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -89,14 +140,9 @@ app.get("/api/groups", async (req, res) => {
 
 app.get("/api/device/:device", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let data = (await sql.query("SELECT * FROM devices WHERE id = ?", [req.params.device]))
-        if (data.length > 0) {
-            data = data[0]
-            data.slideshows = JSON.parse(data.slideshows)
-            res.send(data);
-        } else {
-            res.send({"error": true})
-        }
+        w.readJSON(`data/devices/${req.params.device}.json`)
+            .then((data) => res.send(data))
+            .catch((err) => res.send({"error": true}))
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -104,17 +150,9 @@ app.get("/api/device/:device", async (req, res) => {
 
 app.get("/api/slideshow/:slideshow", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        list = (await sql.query("SELECT * FROM slideshows WHERE id = ?", [req.params.slideshow]))
-        if (list.length > 0) {
-            list = list[0]
-            let slides = await sql.query("SELECT id, member, position, screentime, name, hash FROM slides WHERE member = ? ORDER BY position ASC", [req.params.slideshow])
-            res.send({
-                "info": list,
-                "slides": slides
-            })
-        } else {
-            res.send({"error": true})
-        }
+        w.readJSON(`data/slideshows/${req.params.slideshow}.json`)
+            .then((data) => res.send(data))
+            .catch((err) => res.send({"error": true}))
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -122,22 +160,21 @@ app.get("/api/slideshow/:slideshow", async (req, res) => {
 
 app.get("/api/group/:group", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let data = await sql.query("SELECT * FROM groups WHERE id = ?", req.params.group)
-        let devices = await sql.query("SELECT id, name, devgroup FROM devices")
-        if (data.length > 0) {
-            data = data[0]
-            data.devices = devices
-            res.send(data);
-        } else {
-            res.send({"error": true})
-        }
+        w.readJSON(`data/groups/${req.params.group}.json`)
+            .then(async (data) => {
+                data.devices = await w.getList('data/devices', ["id", "name", "devgroup"])
+                res.send(data);
+            })
+            .catch((err) => res.send({"error": true}))
     } else {
         res.send({"error": "NotVerified"});
     }
 });
 
-app.get("/api/slide/thumbnail/:id", async (req, res) => {
+app.get("/api/slide/thumbnail/:id", async (req, res) => { // needs new file uploader
     if (await auth.isVerified(req.signedCookies)) {
+        res.send("")
+        return;
         let slide = await sql.query("SELECT thumbnail FROM slides WHERE id = ?", req.params.id)
         var img = Buffer.from(slide[0].thumbnail.replace("data:image/png;base64,", ""), 'base64');
         res.writeHead(200, {
@@ -152,8 +189,8 @@ app.get("/api/slide/thumbnail/:id", async (req, res) => {
 
 app.post("/api/device/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let max = (await sql.query("SELECT MAX(id) AS id_max FROM devices"))[0].id_max;
-        await sql.query("INSERT INTO devices (id, name, slideshows, port) VALUES(?, ?, ?, ?)", [max+1, `Device ${max+1}`, "[]", 3030]);
+        let device = new Device()
+        await w.writeJSON(`data/devices/${device.id}.json`, device)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -162,8 +199,8 @@ app.post("/api/device/new", async (req, res) => {
 
 app.post("/api/slideshow/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let max = (await sql.query("SELECT MAX(id) AS id_max FROM slideshows"))[0].id_max;
-        await sql.query("INSERT INTO slideshows (id, name, expire) VALUES(?, ?, ?)", [max+1, `Slideshow ${max+1}`, 0]);
+        let slideshow = new Slideshow()
+        await w.writeJSON(`data/slideshows/${slideshow.id}.json`, slideshow)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -172,20 +209,21 @@ app.post("/api/slideshow/new", async (req, res) => {
 
 app.post("/api/group/new", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let max = (await sql.query("SELECT MAX(id) AS id_max FROM groups"))[0].id_max;
-        await sql.query("INSERT INTO groups (id, name, slideshows) VALUES(?, ?, ?)", [max+1, `Group ${max+1}`, "[]"]);
+        let group = new Group()
+        await w.writeJSON(`data/groups/${group.id}.json`, group)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
     }
 });
 
-app.post("/api/slide/new", (async (req, res) => {
+app.post("/api/slide/new", (async (req, res) => { // this does NOT work with the current front end!
     if (await auth.isVerified(req.signedCookies)) {
-        let currentMax = await sql.query("SELECT position FROM slides WHERE member = ? ORDER BY position DESC LIMIT 1", req.body.member);
-        if (currentMax.length == 0) position = 0
-        else position = currentMax[0].position + 1
-        await sql.query("INSERT INTO slides (member, position, screentime, name, hash, data, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)", [req.body.member, position, process.env.DEFUALT_TIME || 10, req.body.name, md5(req.body.data), req.body.data, req.body.thumbnail]);
+        let slide = new Slide(req.body.name, md5(req.body.data), "b64")
+        let input = await w.readJSON(`data/slideshows/${req.body.member}.json`)
+        input.slides[slide.id] = slide
+        input.order.push(slide.id)
+        await w.writeJSON(`data/slideshows/${req.body.member}.json`, input)
         pusher.updateDevicesWithSlideshow(req.body.member);
         res.send({"error": false});
     } else {
@@ -193,31 +231,19 @@ app.post("/api/slide/new", (async (req, res) => {
     }
 }));
 
+function array_move(arr, old_index, new_index) { // https://stackoverflow.com/questions/5306680/move-an-array-element-from-one-array-position-to-another
+    if (new_index >= arr.length) arr.splice(arr.length, 0, arr.splice(old_index, 1)[0]);
+    else arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+    return arr; // for testing
+};
+
 app.post("/api/slide/move", (async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let highestpos = await sql.query("SELECT position FROM slides WHERE member = ? ORDER BY position DESC LIMIT 1", req.body.slideshow)
-        highestpos = highestpos[0].position
-        if (req.body.newPos > highestpos+1) {
-            req.body.newPos = highestpos
-        }
-        if (req.body.newPos < 0) {
-            req.body.newPos = 0
-        }
-        if (req.body.originalPos > req.body.newPos) {
-            let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.newPos, req.body.originalPos])
-            for (let slide of toChange) {
-                if (slide.position >= req.body.newPos && slide.position < req.body.originalPos) slide.position += 1
-                else if (slide.position == req.body.originalPos) slide.position = req.body.newPos
-                await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slide.position, slide.id]);
-            }
-        } else if (req.body.originalPos < req.body.newPos) {
-            let toChange = await sql.query("SELECT position, id FROM slides WHERE member = ? AND position >= ? AND position <= ?", [req.body.slideshow, req.body.originalPos, req.body.newPos])
-            for (let slide of toChange) {
-                if (slide.position <= req.body.newPos && slide.position > req.body.originalPos) slide.position -= 1
-                else if (slide.position == req.body.originalPos) slide.position = req.body.newPos
-                await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slide.position, slide.id]);
-            }
-        } else {}
+        let input = await w.readJSON(`data/slideshows/${req.body.slideshow}.json`)
+        console.log(input.order)
+        input.order = array_move(input.order, req.body.originalPos, parseInt(req.body.newPos))
+        console.log(input.order)
+        await w.writeJSON(`data/slideshows/${req.body.slideshow}.json`, input)
         pusher.updateDevicesWithSlideshow(req.body.slideshow);
         res.send({"error": false});
     } else {
@@ -227,9 +253,14 @@ app.post("/api/slide/move", (async (req, res) => {
 
 app.post("/api/device/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let inDevGroup = await sql.query("SELECT devgroup, slideshows FROM devices WHERE id = ?", req.body.id)
-        if (inDevGroup[0].devgroup != null) req.body.slidshows = inDevGroup[0].slideshows
-        await sql.query("UPDATE devices SET name = ?, ip = ?, slideshows = ?, authentication = ?, port = ? WHERE id = ?", [req.body.name, req.body.ip, JSON.stringify(req.body.slideshows), req.body.authentication, req.body.port, req.body.id])
+        let device = await w.readJSON(`data/devices/${req.body.id}.json`)
+        if (device.devgroup) req.body.slideshows = device.slideshows // devices in a group cannot deviate from group
+        if (req.body.name) device.name = req.body.name
+        if (req.body.ip) device.ip = req.body.ip
+        if (req.body.slideshows) device.slideshows = req.body.slideshows
+        if (req.body.authentication) device.authentication = req.body.authentication
+        if (req.body.port) device.port = req.body.port
+        await w.writeJSON(`data/devices/${req.body.id}.json`, device)
         pusher.pushManifest(req.body.id);
         res.send({"error": false});
     } else {
@@ -237,10 +268,14 @@ app.post("/api/device/edit", async (req, res) => {
     }
 });
 
-app.post("/api/slide/edit", async (req, res) => {
+app.post("/api/slide/edit", async (req, res) => { // this does NOT work with the current front end!
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE slides SET name = ?, screentime = ? WHERE id=?", [req.body.name, req.body.screentime, req.body.id]) // NOT COMPLETE
-        pusher.updateDevicesWithSlideshow((await sql.query("SELECT member FROM slides WHERE id = ?", [req.body.id]))[0].member)
+        let input = await w.readJSON(`data/slideshows/${req.body.member}.json`)
+        if (req.body.name) input.slides[req.body.id].name = req.body.name
+        if (req.body.screentime) input.slides[req.body.id].screentime = req.body.screentime
+        if (req.body.expire) input.slides[req.body.id].expire = req.body.expire
+        await w.writeJSON(`data/slideshows/${req.body.member}.json`, input)
+        pusher.updateDevicesWithSlideshow(req.body.member)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -249,10 +284,16 @@ app.post("/api/slide/edit", async (req, res) => {
 
 app.post("/api/group/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE groups SET name = ?, slideshows = ? WHERE id = ?", [req.body.name, JSON.stringify(req.body.slideshows), req.body.id])
-        for (let device of req.body.devices) {
-            await sql.query("UPDATE devices SET slideshows = ?, devgroup = ? WHERE id = ?", [JSON.stringify(req.body.slideshows), req.body.id, device])
-            pusher.pushManifest(device);
+        let input = await w.readJSON(`data/groups/${req.body.id}.json`)
+        if (req.body.name) input.name = req.body.name
+        if (req.body.slideshows) input.slideshows = req.body.slideshows
+        if (req.body.devices) input.devices = req.body.devices
+        await w.writeJSON(`data/groups/${req.body.id}.json`, input)
+        for (let device of await w.getList('data/devices', ["id", "devgroup"])) {
+            if (device.devgroup == req.body.id && !input.devices.includes(device.id)) await w.updateValue(`data/devices/${device.id}.json`, "devgroup", null)
+            if (device.devgroup != req.body.id && input.devices.includes(device.id))  await w.updateValue(`data/devices/${device.id}.json`, "devgroup", req.body.id)
+            if (input.devices.includes(device.id)) await w.updateValue(`data/devices/${device.id}.json`, "slideshows", req.body.slideshows)
+            pusher.pushManifest(device.id);
         }
         res.send({"error": false});
     } else {
@@ -262,7 +303,10 @@ app.post("/api/group/edit", async (req, res) => {
 
 app.post("/api/slideshow/edit", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("UPDATE slideshows SET name = ?, expire = ? WHERE id= ?", [req.body.name, req.body.expire, req.body.id])
+        let input = await w.readJSON(`data/slideshows/${req.body.id}.json`)
+        if (req.body.name) input.name = req.body.name
+        if (req.body.expire) input.expire = req.body.expire
+        await w.writeJSON(`data/slideshows/${req.body.id}.json`, input)
         pusher.updateDevicesWithSlideshow(req.body.id)
         res.send({"error": false});
     } else {
@@ -270,7 +314,7 @@ app.post("/api/slideshow/edit", async (req, res) => {
     }
 });
 
-app.get("/api/slide/get/:id", async (req, res) => {
+app.get("/api/slide/get/:id", async (req, res) => { // needs new file uploader
     if (true) { // device authentication
         let content = await sql.query("SELECT data FROM slides WHERE id = ?", [req.params.id])
         if (content.length > 0) {
@@ -290,23 +334,23 @@ app.get("/api/device/refresh/:id", async (req, res) => {
 
 app.get("/api/device/test/:id", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let data = await sql.query("SELECT ip, port, lastSuccess, authentication FROM devices WHERE id = ?", [req.params.id])
-        pusher.get(`http://${data[0].ip}:${data[0].port}/status?auth=${data[0].authentication}`).then((resp) => {
-            if (resp.error == "auth") sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [-1, req.params.id])
-            else sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date(), req.params.id])
+        let data = await w.readJSON(`data/devices/${req.params.id}.json`)
+        pusher.get(`http://${data.ip}:${data.port}/status?auth=${data.authentication}`).then(async (resp) => {
+            if (resp.error == "auth") await w.updateValue(`data/devices/${req.params.id}.json`, "lastSuccess", -1)
+            else await w.updateValue(`data/devices/${req.params.id}.json`, "lastSuccess", new Date())
             res.send({devError: false, response:resp})
-          }).catch((error) => {
-            res.send({devError: true, response: data[0].lastSuccess})
-            sql.query("UPDATE devices SET lastSuccess = ? WHERE id = ?", [new Date()*-1, req.params.id])
+          }).catch(async (error) => {
+            res.send({devError: true, response: data.lastSuccess})
+            await w.updateValue(`data/devices/${req.params.id}.json`, "lastSuccess", new Date()*-1)
           });
     }
 });
 
 app.post("/api/device/reboot", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let data = await sql.query("SELECT ip, port, authentication FROM devices WHERE id = ?", [req.body.id])
+        let data = await w.readJSON(`data/devices/${req.body.id}.json`)
         try {
-            let resp = await pusher.post(`http://${data[0].ip}:${data[0].port}/reboot`, {"auth": data[0].authentication});
+            let resp = await pusher.post(`http://${data.ip}:${data.port}/reboot`, {"auth": data.authentication});
             res.send({error: false})
         } catch(e)  {
             console.log(e)
@@ -316,9 +360,9 @@ app.post("/api/device/reboot", async (req, res) => {
 });
 
 app.get("/api/device/getnonce/:id", async (req, res) => {
-    let info = await sql.query("SELECT manifest FROM devices WHERE id = ?", [req.params.id])
-    if (info[0].manifest != null) {
-        res.send({"nonce": info[0].manifest})
+    let data = await w.readJSON(`data/devices/${req.params.id}.json`)
+    if (data.manifest != null) {
+        res.send({"nonce": data.manifest})
     } else {
         res.send({"nonce": null})
     }
@@ -326,13 +370,14 @@ app.get("/api/device/getnonce/:id", async (req, res) => {
 
 app.post("/api/slide/delete", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        let slideInfo =  await sql.query("SELECT member, position FROM slides WHERE id= ?", [req.body.id])
-        await sql.query("DELETE FROM slides WHERE id = ?", [req.body.id]);
-        let slides = sql.query("SELECT id, position FROM slides WHERE member = ? AND position > ?", [slideInfo[0].member, slideInfo[0].position]);
-        for (let slide in slides) {
-            await sql.query("UPDATE slides SET position = ? WHERE id = ?", [slides[slide].position-1, slides[slide].id]);
-        }
-        pusher.updateDevicesWithSlideshow(slideInfo[0].member);
+        let input = await w.readJSON(`data/slideshows/${req.body.member}.json`)
+        delete input.slides[req.body.id]
+        input.order = removeFromArray(input.order, req.body.id)
+        await w.writeJSON(`data/slideshows/${req.body.member}.json`, input)
+
+        // file cleanup
+
+        pusher.updateDevicesWithSlideshow(req.body.member);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -349,29 +394,41 @@ function removeFromArray(arr, item) {
      return arr
 }
 
-app.post("/api/slideshow/delete", async (req, res) => {
+app.post("/api/slideshow/delete", async (req, res) => { // needs to also remove from groups!
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("DELETE FROM slideshows WHERE id = ?", [req.body.id])
-        await sql.query("DELETE FROM slides WHERE member = ?", [req.body.id])
-        let devices = await sql.query('SELECT id, slideshows FROM devices');
-        for (device in devices) {
-            let slideshows = JSON.parse(devices[device].slideshows)
-            if (slideshows.includes(req.body.id)) {
-                slideshows = removeFromArray(slideshows, req.body.id);
-                await sql.query("UPDATE devices SET slideshows = ? WHERE id = ?", [JSON.stringify(slideshows), devices[device].id]);
-                await pusher.pushManifest(devices[device].id);
+        let input = await w.readJSON(`data/slideshows/${req.body.id}.json`)
+        await w.deleteJSON(`data/slideshows/${req.body.id}.json`)
+        let devices = await w.getList('data/devices', ["id", "slideshows", "devgroup"])
+        let updateGroups = []
+        let updateDevices = []
+        for (let device of devices) {
+            if (device.slideshows.includes(req.body.id)) {
+                w.updateValue(`data/devices/${device.id}.json`, "slideshows", removeFromArray(device.slideshows, req.body.id))
+                updateDevices.push(device.id)
             }
+            if (device.devgroup != null && !updateGroups.includes(device.devgroup)) updateGroups.push(device.devgroup)
         }
-        pusher.updateDevicesWithSlideshow(req.body.id)
+        for (let group of updateGroups) {
+            let input = await w.readJSON(`data/groups/${group}.json`)
+            input.slideshows = removeFromArray(input.slideshows, req.body.id);
+            await w.writeJSON(`data/groups/${group}.json`, input)
+        }
+        for (let device of updateDevices) pusher.pushManifest(device)
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
     }
 });
 
-app.post("/api/device/delete", async (req, res) => {
+app.post("/api/device/delete", async (req, res) => { // remove from device list on group
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("DELETE FROM devices WHERE id = ?", [req.body.id])
+        let input = await w.readJSON(`data/devices/${req.body.id}.json`)
+        await w.deleteJSON(`data/devices/${req.body.id}.json`)
+        if (input.devgroup) {
+            let input2 = await w.readJSON(`data/groups/${input.devgroup}.json`)
+            input2.devices = removeFromArray(input2.devices, req.body.id);
+            await w.writeJSON(`data/groups/${input.devgroup}.json`, input2)
+        }
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -380,8 +437,9 @@ app.post("/api/device/delete", async (req, res) => {
 
 app.post("/api/group/delete", async (req, res) => {
     if (await auth.isVerified(req.signedCookies)) {
-        await sql.query("DELETE FROM groups WHERE id = ?", req.body.id)
-        await sql.query("UPDATE devices SET devgroup = null WHERE devgroup = ?", req.body.id)
+        let input = await w.readJSON(`data/groups/${req.body.id}.json`)
+        await w.deleteJSON(`data/groups/${req.body.id}.json`)
+        for (let device of input.devices) await w.updateValue(`data/devices/${device}.json`, "devgroup", null);
         res.send({"error": false});
     } else {
         res.send({"error": "NotVerified"});
@@ -391,7 +449,10 @@ app.post("/api/group/delete", async (req, res) => {
 
 let port = process.env.PI_PORT || 3000
 if (process.env.TEST_ENV == 1) port = null
-let server = app.listen(port, () => {if (process.env.TEST_ENV != 1)console.log(`PieBoard Server Host listening on port ${port}!`)})
+let server = app.listen(port, async () => {
+    await w.initialize()
+    if (process.env.TEST_ENV != 1)console.log(`PieBoard Server Host listening on port ${port}!`)
+})
 
 function stop() {
     server.close()

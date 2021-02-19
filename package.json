@@ -4,7 +4,8 @@
   "description": "pieboard server",
   "main": "app.js",
   "scripts": {
-    "test": "cross-env TEST_ENV=1 jest"
+    "test": "cross-env TEST_ENV=1 jest",
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +22,8 @@
     "md5": "^2.2.1",
     "node-fetch": "^2.6.0",
     "npm": "^6.13.6",
-    "sqlite3": "^4.1.1"
+    "object-path": "^0.11.5",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
