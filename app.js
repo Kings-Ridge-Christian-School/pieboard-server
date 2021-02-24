@@ -5,15 +5,23 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser')
 const uuid = require("uuid")
 const md5 = require("md5")
+const imageThumbnail = require("image-thumbnail")
+const fileUpload = require("express-fileupload")
 app.use(cookieParser("secret"));
 app.use(bodyParser.json({limit: '2gb', extended: true}))
 app.use(bodyParser.urlencoded({limit: '2gb', extended: true}))
+app.use(fileUpload({
+    limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB for now
+    useTempFiles : true,
+    tempFileDir : 'data/tmp'
+}));
 require('dotenv').config()
 
 
 const w = require("./modules/json.js")
 const auth = require("./modules/authenticator.js")
 const pusher = require("./modules/pusher.js")
+const handler = require("./modules/fileHandler.js")
 
 const dir = __dirname + "/static/"
 
@@ -171,17 +179,14 @@ app.get("/api/group/:group", async (req, res) => {
     }
 });
 
-app.get("/api/slide/thumbnail/:id", async (req, res) => { // needs new file uploader
+app.get("/api/slide/thumbnail/:slide", async (req, res) => { // needs new file uploader
     if (await auth.isVerified(req.signedCookies)) {
-        res.send("")
-        return;
-        let slide = await sql.query("SELECT thumbnail FROM slides WHERE id = ?", req.params.id)
-        var img = Buffer.from(slide[0].thumbnail.replace("data:image/png;base64,", ""), 'base64');
-        res.writeHead(200, {
-          'Content-Type': 'image/png',
-          'Content-Length': img.length
-        });
-        res.end(img); 
+        let slideSplit = req.params.slide.split(".")
+        if (slideSplit.length == 2) {
+            slideSplit[0] += "_THUMB"
+            slideSplit = slideSplit.join(".")
+            res.sendFile(__dirname + `/data/slides/${slideSplit.substring(0, 2)}/${slideSplit}`)
+        } else res.send({"error": true})
     } else {
         res.send({"error": "NotVerified"});
     }
@@ -219,7 +224,16 @@ app.post("/api/group/new", async (req, res) => {
 
 app.post("/api/slide/new", (async (req, res) => { // this does NOT work with the current front end!
     if (await auth.isVerified(req.signedCookies)) {
-        let slide = new Slide(req.body.name, md5(req.body.data), "b64")
+        let name = req.files.file.name.split(".")
+        let extension = name.pop()
+        name = name.join(".")
+        let slide = new Slide(name, req.files.file.md5, extension)
+        let info = await handler.save(req.files.file, req.files.file.md5, extension)
+        let thumbnail = await imageThumbnail(info.path, {width: 250});
+        let thumbName = info.name.split(".")
+        thumbName[0] += "_THUMB"
+        thumbName = thumbName.join(".")
+        await fs.promises.writeFile(`data/slides/${info.name.substring(0,2)}/${thumbName}`, thumbnail)
         let input = await w.readJSON(`data/slideshows/${req.body.member}.json`)
         input.slides[slide.id] = slide
         input.order.push(slide.id)
@@ -314,14 +328,11 @@ app.post("/api/slideshow/edit", async (req, res) => {
     }
 });
 
-app.get("/api/slide/get/:id", async (req, res) => { // needs new file uploader
+app.get("/api/slide/get/:slide", async (req, res) => {
     if (true) { // device authentication
-        let content = await sql.query("SELECT data FROM slides WHERE id = ?", [req.params.id])
-        if (content.length > 0) {
-            res.send(content[0].data);
-        } else {
-            res.send({"error": true})
-        }
+        if (req.params.slide.split(".").length == 2) {
+            res.sendFile(`data/slides/${req.params.slide.substring(0, 2)}/${req.params.slide}`)
+        } else res.send({"error": true})
     }
 });
 

@@ -170,8 +170,10 @@ async function deleteSlide() {
     if (confirm("Are you sure you want to delete slide " + slide + "? This is irreversable!")) {
         res = await postWithResult("addSlideshowStatus", "/api/slide/delete", {"id": slide, "member": document.getElementById("slideshowID").innerHTML});
         if (res) {
-            delete slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == slide)]
-            slideRestartCache.slides = slideRestartCache.slides.filter((el) => el != null);
+            delete slideRestartCache.slides[slide]
+            slideRestartCache.order = slideRestartCache.order.filter(function(item) {
+                return item !== slide
+            })
             processSlideshowChange(true);
             init_navigation();
         }
@@ -231,17 +233,7 @@ async function handleDrop(e) {
             img.src = datas;
         });
     }
-    
-    function makethumb(data) {
-        return new Promise((resolve) => {
-            var i = new Image(); 
-            i.onload = function(){
-                let size = i.width/200
-                resolve(resizedataURL(data, i.width/size, i.height/size));
-            };
-            i.src = data; 
-        });
-    }
+
     if (internalDrag == false) {
         let dt = e.dataTransfer
         let files = dt.files
@@ -250,14 +242,19 @@ async function handleDrop(e) {
             let file = files[file_number]
             if (file.type != null) { 
                 if (file.type.startsWith("image")) {
-                    let b64 = await toBase64(file)
-                    await post("/api/slide/new", {
-                        "member": current,
-                        "name": file.name,
-                        "data": b64,
-                        "thumbnail": await makethumb(b64)
-                    })
-                    document.getElementById("addSlideStatus").innerHTML =  `${file_number}/${files.length} Uploaded`
+                    const formData = new FormData()
+                    formData.append('file', file)
+                    formData.append("member", current)
+
+                    await new Promise((resolve, reject) => {
+                        fetch('/api/slide/new', {
+                            method: 'POST',
+                            body: formData
+                        }).then((res) => {
+                            document.getElementById("addSlideStatus").innerHTML = `${file_number}/${files.length} Uploaded`
+                            resolve()
+                        })
+                    });
                 } else {
                     alert("You can only upload images");
                 }
@@ -471,7 +468,7 @@ async function processSlideshowChange(useCache) {
             img.id = slide
             capt.id = slide
             img.setAttribute("loading", "lazy")
-            img.setAttribute("src", `/api/slide/thumbnail/${slide}`);
+            img.setAttribute("src", `/api/slide/thumbnail/${slides[slide].hash}.${slides[slide].type}`);
             capt.appendChild(document.createTextNode(slides[slide].name));
 
             figure.appendChild(img);
@@ -665,7 +662,8 @@ async function saveSlideData() {
     await postWithResult("saveSlideStatus", "/api/slide/edit", {
         "id": id,
         "name": document.getElementById("slideshowSlideName").value,
-        "screentime": document.getElementById("slideshowSlideDisplayTime").value
+        "screentime": document.getElementById("slideshowSlideDisplayTime").value,
+        "member": document.getElementById("slideshowID").innerHTML
     });
 
     if (slideCache[id].position+1 != document.getElementById("slideshowSlidePosition").value) {
