@@ -377,6 +377,30 @@ function setImage(img) {
     } else {
         document.getElementById("g_fislideshowID_" + img.target.id).className = "g_fig selected"
     }
+
+    console.log(slideCache[img.target.id])
+
+    if (slideCache[img.target.id].expire == "0") {
+        document.getElementById("slideExpireDate").disabled = true
+        document.getElementById("slideExpireTime").disabled = true
+        document.getElementById("slideExpireDate").value = null
+        document.getElementById("slideExpireTime").value = null
+        document.getElementById("slideExpireCheckbox").checked = true
+    } else {
+        let expire = new Date(slideCache[img.target.id].expire)
+        document.getElementById("slideExpireDate").disabled = false
+        document.getElementById("slideExpireTime").disabled = false
+        document.getElementById("slideExpireCheckbox").checked = false
+        document.getElementById("slideExpireDate").value = expire.getFullYear() + "-" + (expire.getMonth()+1).toString().padStart(2, '0') + "-" + expire.getDate().toString().padStart(2, '0')
+        document.getElementById("slideExpireTime").value = expire.getHours().toString().padStart(2, '0') + ":" + expire.getMinutes().toString().padStart(2, '0') + ":" + expire.getSeconds().toString().padStart(2, '0')
+    }
+    document.getElementById("slideExpireCheckbox").addEventListener("change", () => {
+
+        document.getElementById("slideExpireDate").disabled = document.getElementById("slideExpireCheckbox").checked
+        document.getElementById("slideExpireTime").disabled = document.getElementById("slideExpireCheckbox").checked
+    });
+
+
     let id = img.target.id.replace("g_fislideshowID_", "");
     document.getElementById("slideshowSlideID").innerHTML = id
     document.getElementById("slideshowSlideName").value = slideCache[id].name
@@ -386,6 +410,7 @@ function setImage(img) {
     document.getElementById("slideshowSlideDisplayTime").disabled = false
     document.getElementById("saveSlideButton").disabled = false
     document.getElementById("deleteSlideButton").disabled = false
+    document.getElementById("slideshowSlidePosition").disabled = false
 }
 
 function slideshowProcess(elem, slideshows, name) { 
@@ -498,8 +523,13 @@ async function processSlideshowChange(useCache) {
             document.getElementById("slideshowExpireDate").disabled = true
             document.getElementById("slideshowExpireTime").disabled = true
             document.getElementById("slideshowExpireCheckbox").checked = true
+            document.getElementById("slideshowExpireDate").value = null
+            document.getElementById("slideshowExpireTime").value = null
         } else {
             let expire = new Date(data.info.expire)
+            document.getElementById("slideshowExpireDate").disabled = false
+            document.getElementById("slideshowExpireTime").disabled = false
+            document.getElementById("slideshowExpireCheckbox").checked = false
             document.getElementById("slideshowExpireDate").value = expire.getFullYear() + "-" + (expire.getMonth()+1).toString().padStart(2, '0') + "-" + expire.getDate().toString().padStart(2, '0')
             document.getElementById("slideshowExpireTime").value = expire.getHours().toString().padStart(2, '0') + ":" + expire.getMinutes().toString().padStart(2, '0') + ":" + expire.getSeconds().toString().padStart(2, '0')
         }
@@ -516,6 +546,12 @@ async function processSlideshowChange(useCache) {
         document.getElementById("slideshowSlideDisplayTime").disabled = true
         document.getElementById("saveSlideButton").disabled = true
         document.getElementById("deleteSlideButton").disabled = true
+        document.getElementById("slideshowSlidePosition").disabled = true
+        document.getElementById("slideExpireDate").disabled = true
+        document.getElementById("slideExpireTime").disabled = true
+        document.getElementById("slideExpireDate").value = null
+        document.getElementById("slideExpireTime").value = null
+        document.getElementById("slideExpireCheckbox").checked = true
         allowAccess()
 }
 
@@ -659,11 +695,16 @@ async function saveGroupData() {
 }
 async function saveSlideData() {
     let id = document.getElementById("slideshowSlideID").innerHTML
+    let time = 0;
+    if (!document.getElementById("slideExpireCheckbox").checked) {
+        time = new Date(document.getElementById("slideExpireDate").value + " " + document.getElementById("slideExpireTime").value)
+    }
     await postWithResult("saveSlideStatus", "/api/slide/edit", {
         "id": id,
         "name": document.getElementById("slideshowSlideName").value,
         "screentime": document.getElementById("slideshowSlideDisplayTime").value,
-        "member": document.getElementById("slideshowID").innerHTML
+        "member": document.getElementById("slideshowID").innerHTML,
+        "expire": time
     });
 
     if (slideCache[id].position+1 != document.getElementById("slideshowSlidePosition").value) {
@@ -674,8 +715,9 @@ async function saveSlideData() {
         });
         processSlideshowChange(false)
     } else {
-        slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].name = document.getElementById("slideshowSlideName").value
-        slideRestartCache.slides[slideRestartCache.slides.findIndex(p => p.id == document.getElementById("slideshowSlideID").innerHTML)].screentime = document.getElementById("slideshowSlideDisplayTime").value
+        slideRestartCache.slides[id].name = document.getElementById("slideshowSlideName").value
+        slideRestartCache.slides[id].screentime = document.getElementById("slideshowSlideDisplayTime").value
+        slideRestartCache.slides[id].expire = time
         processSlideshowChange(true)
     }
 }
