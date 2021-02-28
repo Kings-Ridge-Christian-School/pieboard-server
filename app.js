@@ -52,14 +52,30 @@ class Slideshow {
 }
 
 class Slide {
-    constructor(name, hash, extension) {
+    constructor(name, hash, extension, type, ext1) {
         this.schema = 1
         this.id = uuid.v4()
         this.name = name || `Slide ${this.id.substring(0,5)}`
         this.expire = 0
-        this.screentime = process.env.DEFAULT_TIME || 10
-        this.hash = hash
-        this.type = extension
+        this.extension = extension
+        this.type = type
+        switch (type) {
+            case "image":
+                this.screentime = process.env.DEFAULT_TIME || 10
+                this.hash = hash
+                break;
+            case "video":
+                this.hash = hash
+                this.volume = ext1 || process.env.DEFAULT_VOLUME || 0
+                break;
+            case "youtube":
+                this.url = hash
+                this.volume = ext1 || process.env.DEFAULT_VOLUME || 0
+            case "live": // livestreams will not be implemented for a while, since more planning is needed around timing/ending
+                this.url = hash
+                this.volume = ext1 || process.env.DEFAULT_VOLUME || 0
+                break;
+        }
     }
 }
 
@@ -227,13 +243,24 @@ app.post("/api/slide/new", (async (req, res) => { // this does NOT work with the
         let name = req.files.file.name.split(".")
         let extension = name.pop()
         name = name.join(".")
-        let slide = new Slide(name, req.files.file.md5, extension)
-        let info = await handler.save(req.files.file, req.files.file.md5, extension)
-        let thumbnail = await imageThumbnail(info.path, {width: 250});
-        let thumbName = info.name.split(".")
-        thumbName[0] += "_THUMB"
-        thumbName = thumbName.join(".")
-        await fs.promises.writeFile(`data/slides/${info.name.substring(0,2)}/${thumbName}`, thumbnail)
+        let fType = req.files.file.mimetype.split("/")[0]
+        let slide, info, thumbnail
+        switch (fType) {
+            case "image":
+                slide = new Slide(name, req.files.file.md5, extension, "image")
+                info = await handler.save(req.files.file, req.files.file.md5, extension)
+                thumbnail = await imageThumbnail(info.path, {width: 250});
+                let thumbName = info.name.split(".")
+                thumbName[0] += "_THUMB"
+                thumbName = thumbName.join(".")
+                await fs.promises.writeFile(`data/slides/${info.name.substring(0,2)}/${thumbName}`, thumbnail)
+                break;
+            case "video":
+                slide = new Slide(name, req.files.file.md5, extension, "video")
+                info = await handler.save(req.files.file, req.files.file.md5, extension)
+                // need to generate thumbnail for video!
+        }
+
         let input = await w.readJSON(`data/slideshows/${req.body.member}.json`)
         input.slides[slide.id] = slide
         input.order.push(slide.id)
@@ -286,6 +313,7 @@ app.post("/api/slide/edit", async (req, res) => { // this does NOT work with the
     if (await auth.isVerified(req.signedCookies)) {
         let input = await w.readJSON(`data/slideshows/${req.body.member}.json`)
         if (req.body.name) input.slides[req.body.id].name = req.body.name
+        if (req.body.volume && input.slides[req.body.id].volume != null) input.slides[req.body.id].volume = req.body.volume
         if (req.body.screentime) input.slides[req.body.id].screentime = req.body.screentime
         if (req.body.expire) input.slides[req.body.id].expire = req.body.expire
         await w.writeJSON(`data/slideshows/${req.body.member}.json`, input)
@@ -331,7 +359,7 @@ app.post("/api/slideshow/edit", async (req, res) => {
 app.get("/api/slide/get/:slide", async (req, res) => {
     if (true) { // device authentication
         if (req.params.slide.split(".").length == 2) {
-            res.sendFile(`data/slides/${req.params.slide.substring(0, 2)}/${req.params.slide}`)
+            res.sendFile(`${__dirname}/data/slides/${req.params.slide.substring(0, 2)}/${req.params.slide}`)
         } else res.send({"error": true})
     }
 });
@@ -414,7 +442,7 @@ app.post("/api/slideshow/delete", async (req, res) => { // needs to also remove 
         let updateDevices = []
         for (let device of devices) {
             if (device.slideshows.includes(req.body.id)) {
-                w.updateValue(`data/devices/${device.id}.json`, "slideshows", removeFromArray(device.slideshows, req.body.id))
+                await w.updateValue(`data/devices/${device.id}.json`, "slideshows", removeFromArray(device.slideshows, req.body.id))
                 updateDevices.push(device.id)
             }
             if (device.devgroup != null && !updateGroups.includes(device.devgroup)) updateGroups.push(device.devgroup)

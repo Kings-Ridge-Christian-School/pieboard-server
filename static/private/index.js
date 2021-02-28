@@ -241,7 +241,7 @@ async function handleDrop(e) {
         for (file_number in files) {
             let file = files[file_number]
             if (file.type != null) { 
-                if (file.type.startsWith("image")) {
+                if (file.type.startsWith("image") || file.type.startsWith("video")) {
                     const formData = new FormData()
                     formData.append('file', file)
                     formData.append("member", current)
@@ -400,6 +400,15 @@ function setImage(img) {
         document.getElementById("slideExpireTime").disabled = document.getElementById("slideExpireCheckbox").checked
     });
 
+    if (slideCache[img.target.id].type == "video") {
+        document.getElementById("slideAudio").style.display = "block"
+        document.getElementById("slideTime").style.display = "none"
+        document.getElementById("slideAudioSlider").value = slideCache[img.target.id].volume
+        document.getElementById("slideAudioValue").innerHTML = `${document.getElementById("slideAudioSlider").value}%`
+    } else {
+        document.getElementById("slideAudio").style.display = "none"
+        document.getElementById("slideTime").style.display = "block"
+    }
 
     let id = img.target.id.replace("g_fislideshowID_", "");
     document.getElementById("slideshowSlideID").innerHTML = id
@@ -411,6 +420,7 @@ function setImage(img) {
     document.getElementById("saveSlideButton").disabled = false
     document.getElementById("deleteSlideButton").disabled = false
     document.getElementById("slideshowSlidePosition").disabled = false
+    document.getElementById("slideAudioSlider").disabled = false
 }
 
 function slideshowProcess(elem, slideshows, name) { 
@@ -485,7 +495,8 @@ async function processSlideshowChange(useCache) {
             slideCache[slide] = slides[slide]
             slideCache[slide].position = i
             let figure = document.createElement("figure");
-            let img = document.createElement("img");
+            let img = document.createElement(slides[slide].type == "image" ? "img" : "video");
+            img.style.height = "100px"
             let capt = document.createElement("figcaption");
             figure.className = "g_fig"
             figure.id = "g_fislideshowID_" + slide
@@ -493,7 +504,8 @@ async function processSlideshowChange(useCache) {
             img.id = slide
             capt.id = slide
             img.setAttribute("loading", "lazy")
-            img.setAttribute("src", `/api/slide/thumbnail/${slides[slide].hash}.${slides[slide].type}`);
+            if (slides[slide].type == "image") img.setAttribute("src", `/api/slide/thumbnail/${slides[slide].hash}.${slides[slide].extension}`);
+            else img.setAttribute("src", `/api/slide/get/${slides[slide].hash}.${slides[slide].extension}`);
             capt.appendChild(document.createTextNode(slides[slide].name));
 
             figure.appendChild(img);
@@ -549,6 +561,7 @@ async function processSlideshowChange(useCache) {
         document.getElementById("slideshowSlidePosition").disabled = true
         document.getElementById("slideExpireDate").disabled = true
         document.getElementById("slideExpireTime").disabled = true
+        document.getElementById("slideAudioSlider").disabled = true
         document.getElementById("slideExpireDate").value = null
         document.getElementById("slideExpireTime").value = null
         document.getElementById("slideExpireCheckbox").checked = true
@@ -701,6 +714,7 @@ async function saveSlideData() {
     }
     await postWithResult("saveSlideStatus", "/api/slide/edit", {
         "id": id,
+        "volume": document.getElementById("slideAudioSlider").value,
         "name": document.getElementById("slideshowSlideName").value,
         "screentime": document.getElementById("slideshowSlideDisplayTime").value,
         "member": document.getElementById("slideshowID").innerHTML,
@@ -717,6 +731,7 @@ async function saveSlideData() {
     } else {
         slideRestartCache.slides[id].name = document.getElementById("slideshowSlideName").value
         slideRestartCache.slides[id].screentime = document.getElementById("slideshowSlideDisplayTime").value
+        slideRestartCache.slides[id].volume = document.getElementById("slideAudioSlider").value
         slideRestartCache.slides[id].expire = time
         processSlideshowChange(true)
     }
@@ -739,6 +754,7 @@ async function isReady() {
     document.getElementById("saveGroupButton").addEventListener("click", async => {saveGroupData()});
     document.getElementById("refreshDevice").addEventListener("click", async => {refreshDevice()});
     document.getElementById("rebootDevice").addEventListener("click", async => {rebootDevice()});
+    document.getElementById("slideAudioSlider").addEventListener("change", () => {document.getElementById("slideAudioValue").innerHTML = `${document.getElementById("slideAudioSlider").value}%`})
     await init_navigation(); 
     setState(0);
 }

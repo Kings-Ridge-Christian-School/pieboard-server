@@ -42,7 +42,7 @@ function generateManifestFromData(slides, slideshows, id, auth) {
         "id": id,
         "data": []
     }
-    for (let slide in slides) manifest.data.push(slide);
+    for (let slide of slides) manifest.data.push(slide);
     return(manifest);
 }
 
@@ -54,8 +54,8 @@ async function generateManifestFromID(id) {
         let slideList = [];
         for (let slideshow of device.slideshows) {
             slideshowList[slideshow] = await w.readJSON(`data/slideshows/${slideshow}.json`)
-            for (const [key, value] of Object.entries(slideshowList[slideshow].slides)) {
-                slides.push(value)
+            for (let item of slideshowList[slideshow].order) {
+                slides.push(slideshowList[slideshow].slides[item])
             }
         }
         return generateManifestFromData(slides, slideshowList, id, device.authentication);
@@ -72,7 +72,7 @@ async function pushManifest(id) {
         manifest.nonce = nonce
         await w.updateValue(`data/devices/${id}.json`, "manifest", nonce)
         try {
-             let req = await post(`http://${data[0].ip}:${data[0].port}/manifest`, manifest);
+             let req = await post(`http://${data.ip}:${data.port}/manifest`, manifest);
              if (req.error) {
                  console.log("Couldn't push due to password!")
                  await w.updateValue(`data/devices/${id}.json`, "lastSuccess", -1)
@@ -83,7 +83,7 @@ async function pushManifest(id) {
                 return true
              }
         } catch(e)  {
-            console.log(`Unable to push to device ${id}!`);
+            console.log(`Unable to push to device ${id}!`, e);
             await w.updateValue(`data/devices/${id}.json`, "lastSuccess", new Date()*-1)
             return false
         }
