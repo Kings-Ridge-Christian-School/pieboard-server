@@ -1,0 +1,14 @@
+[
+  {
+    "point": "/login",
+    "path":  "login",
+    "type": "post",
+    "auth":  false
+  },
+  {
+    "point": "/verify",
+    "path":  "verify",
+    "type": "get",
+    "auth":  true
+  }
+]

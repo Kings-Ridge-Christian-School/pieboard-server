@@ -1,7 +1,7 @@
-const fs = require('fs')
-const objectPath = require('object-path')
+import fs from 'fs'
+import objectPath from 'object-path'
 
-function readJSON(path) {
+export function readJSON(path) {
     return new Promise((resolve, reject) => {
         fs.access(path, fs.F_OK, async (err) => {
             if (err) {
@@ -14,7 +14,7 @@ function readJSON(path) {
 }
 
 
-function writeJSON(path, data) {
+export function writeJSON(path, data) {
     return new Promise(async (resolve, reject) => {
         let name = path.split("/")
         name = name[name.length-1]
@@ -28,7 +28,7 @@ function writeJSON(path, data) {
     });
 }
 
-function deleteJSON(path) { // seems to be a general delete function, may be moved to fileHandler
+export function deleteJSON(path) { // seems to be a general delete function, may be moved to fileHandler
     return new Promise(async (resolve, reject) => {
         fs.unlink(path, (err) => {
             if (err) reject(err)
@@ -37,7 +37,7 @@ function deleteJSON(path) { // seems to be a general delete function, may be mov
     });
 }
 
-function listJSON(path) {
+export function listJSON(path) {
     return new Promise(async (resolve, reject) => {
         let fileList = []
         fs.readdir(path, (err, files) => {
@@ -51,13 +51,13 @@ function listJSON(path) {
     });
 }
 
-async function updateValue(path, location, value) {
-        let input = await readJSON(path)
-        objectPath.set(input, location, value)
-        await writeJSON(path, input)
+export async function updateValue(path, location, value) {
+    let input = await readJSON(path)
+    objectPath.set(input, location, value)
+    await writeJSON(path, input)
 }
 
-async function getList(path, keys) {
+export async function getList(path, keys) {
     let input = await listJSON(path)
     let output = []
     for (let piece of input) {
@@ -70,7 +70,7 @@ async function getList(path, keys) {
 }
 
 
-async function initialize() {
+export async function initialize() {
     try {
         fs.mkdir("data/slideshows", {recursive:true}, (err) => {});
         fs.mkdir("data/devices",{recursive:true}, (err) => {})
@@ -81,10 +81,3 @@ async function initialize() {
         console.log(err);
     }
 }
-exports.readJSON = readJSON
-exports.writeJSON = writeJSON
-exports.deleteJSON = deleteJSON
-exports.listJSON = listJSON
-exports.initialize = initialize
-exports.updateValue = updateValue
-exports.getList = getList
