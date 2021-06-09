@@ -10,5 +10,47 @@
     "path":  "verify",
     "type": "get",
     "auth":  true
+  },
+  {
+    "point": "/client",
+    "path":  "client",
+    "type": "get",
+    "auth":  true
+  },
+  {
+    "point": "/client",
+    "path":  "client",
+    "type": "post",
+    "auth":  true
+  },
+  {
+    "point": "/new/:type",
+    "path":  "new/general",
+    "type": "post",
+    "auth":  true
+  },
+  {
+    "point": "/new/slide/:slideshow",
+    "path":  "new/slide",
+    "type": "post",
+    "auth":  true
+  },
+  {
+    "point": "/read/slide/:slideshow/:slide",
+    "path":  "read/slide",
+    "type": "get",
+    "auth":  true
+  },
+  {
+    "point": "/read/:type/:id",
+    "path":  "read/general",
+    "type": "get",
+    "auth":  true
+  },
+  {
+    "point": "/list/:type",
+    "path":  "list/general",
+    "type": "get",
+    "auth":  true
   }
 ]

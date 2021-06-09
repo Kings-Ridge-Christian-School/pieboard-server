@@ -1,8 +1,8 @@
 import express from 'express'
 import fs from 'fs'
 const app = express()
-import fileUpload from "express-fileupload"
-import bodyParser from "body-parser"
+import bodyParser from 'body-parser'
+import fileUpload from 'express-fileupload'
 import { v4 as uuid } from 'uuid';
 import dotenv from 'dotenv'
 dotenv.config()
@@ -13,80 +13,20 @@ import * as crypto from "./modules/crypto.mjs"
 import log from "./modules/log.mjs"
 import {reqLog} from './modules/log.mjs'
 
-app.use(bodyParser.json({limit: '2gb', extended: true}))
-app.use(bodyParser.urlencoded({limit: '2gb', extended: true}))
-app.use(fileUpload({
-    limits: { fileSize: 1024 * 1024 * 1024 * 2 },
-    useTempFiles : true,
-    tempFileDir : 'data/tmp'
-}));
+app.use(fileUpload())
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }))
 
 app.use(reqLog())
 
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = `${dirname(__filename)}/`;
+
+
 const port = process.env.PI_PORT || 3000
-
-class Device {
-    constructor() {
-        this.schema = 2
-        this.id = uuid()
-        this.name = `Device ${this.id.substring(0,5)}`
-        this.group = null
-        this.port = 3030
-        this.key = null
-        this.ip = null
-        this.manifest = {}
-    }
-}
-
-class Slideshow {
-    constructor() {
-        this.schema = 2
-        this.id = uuid()
-        this.name = `Slideshow ${this.id.substring(0,5)}`
-        this.expire = 0
-        this.slides = {}
-        this.order = []
-        this.isRandom = false
-    }
-}
-
-class Slide {
-    constructor(name, hash, extension, type, ext1) {
-        this.schema = 2
-        this.id = uuid()
-        this.name = name || `Slide ${this.id.substring(0,5)}`
-        this.expire = 0
-        this.extension = extension
-        this.type = type
-        switch (type) {
-            case "image":
-                this.screentime = process.env.DEFAULT_TIME || 10
-                this.hash = hash
-                break;
-            case "video":
-                this.hash = hash
-                this.volume = ext1 || process.env.DEFAULT_VOLUME || 0
-                break;
-            case "youtube":
-                this.url = hash
-                this.volume = ext1 || process.env.DEFAULT_VOLUME || 0
-            case "live":
-                this.url = hash
-                this.volume = ext1 || process.env.DEFAULT_VOLUME || 0
-                break;
-        }
-    }
-}
-
-class Group {
-    constructor() {
-        this.schema = 2
-        this.id = uuid()
-        this.name = `Group ${this.id.substring(0,5)}`
-        this.devices = []
-        this.slideshows = []
-    }
-}
 
 class Server {
     constructor() {
@@ -117,7 +57,8 @@ async function createEndpoint(endpoint) {
                 res.status(response.code)
                 if (response.headers) for (let header of Object.keys(response.headers)) res.header(header, response.headers[header])
                 if (response.type) res.type(response.type)
-                res.send(response.data)
+                if (response.path) res.sendFile(__dirname + response.path)
+                else res.send(response.data)
             })
             break;
         case "post":
@@ -134,11 +75,12 @@ async function createEndpoint(endpoint) {
                 res.status(response.code)
                 if (response.headers) for (let header of Object.keys(response.headers)) res.header(header, response.headers[header])
                 if (response.type) res.type(response.type)
-                res.send(response.data)
+                if (response.path) res.sendFile(__dirname + response.path)
+                else res.send(response.data)
             });
             break;
     }
-    log("MAIN", `Created mapping ${endpoint.point} --> ${endpoint.path}`)
+    log("MAIN", `Created ${endpoint.type} mapping ${endpoint.point} --> ${endpoint.path}`)
 }
 
 app.listen(port, async () => {

@@ -36,6 +36,9 @@ export function inGroup(username) {
 }
 
 export async function allowed(req) {
+
+    if (process.env.BYPASS_AUTHENTICATION == "true") return true
+
     let info = keys[req.body.auth] || keys[req.query.auth] || keys[req.get("Authorization")]
 
     if (info.last/1 > new Date()/1-VALID_TIME) {
@@ -47,5 +50,6 @@ export async function allowed(req) {
 
 export async function initialize() {
     ad = new ActiveDirectory(config);
+    if (process.env.BYPASS_AUTHENTICATION == "true") log("AUTH", "Authentication disabled!", 2)
     log("AUTH", "Initialized", 0)
 }
