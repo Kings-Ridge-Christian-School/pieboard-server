@@ -52,5 +52,11 @@
     "path":  "list/general",
     "type": "get",
     "auth":  true
+  },
+  {
+    "point": "/delete/slide/:slideshow/:slide",
+    "path":  "delete/slide",
+    "type": "post",
+    "auth":  true
   }
 ]

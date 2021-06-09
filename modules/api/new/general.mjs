@@ -1,6 +1,6 @@
 import * as store from "./../../store.mjs"
 import {v4 as uuid} from "uuid";
-
+import log from "./../../log.mjs"
 
 /*
     States:
@@ -68,6 +68,7 @@ export default async function main(req) {
 
 
     await store.writeJSON(`./data/${type}s/${cl.id}.json`, cl)
+    log("NEW", `Created new ${type} by ID ${cl.id}`)
 
     return {"code": 200, "data": cl.id}
 }

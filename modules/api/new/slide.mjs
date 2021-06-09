@@ -1,6 +1,7 @@
 import * as store from "./../../store.mjs"
 import {v4 as uuid} from "uuid";
 import fs from "fs";
+import log from "../../log.mjs";
 
 /*
     if a file is uploaded, the mimetype is used by default, however defining a "type" overrides this
@@ -47,6 +48,7 @@ async function upload(file) {
             if (err) reject(err)
             else {
                 file.mv(endPath, (err) => {
+                    log("NEW", `Uploaded ${path}`, 0)
                     if (err) reject(err)
                     else resolve({
                         "name": endName,
@@ -82,6 +84,8 @@ export default async function main(req) {
 
     let ftype = req.body.type || req.files.upload.mimetype.split("/")[0]
 
+    log("NEW", `Creating new slide for ${req.params.slideshow} as type ${ftype}`, 0)
+
     if (!mimetypes.includes(ftype)) return {"code": 400, "data": "NotValidFileTypeError"}
 
     let slide;
@@ -106,6 +110,9 @@ export default async function main(req) {
     slideshow.order.push(slide.id)
 
     await store.writeJSON(`./data/slideshows/${req.params.slideshow}.json`, slideshow);
+    log("NEW", `Updated ${req.params.slideshow} for new slide`, 0)
+
+    log("NEW", `Created new slide by ID ${slide.id}`)
 
     return {"code": 200, "data": slide.id}
 }

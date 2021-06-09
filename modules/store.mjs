@@ -1,12 +1,15 @@
 import fs from 'fs'
 import objectPath from 'object-path'
+import log from "./log.mjs";
 
 export function readJSON(path) {
     return new Promise((resolve, reject) => {
         fs.access(path, fs.F_OK, async (err) => {
             if (err) {
+                log("STORE", `Failed read on ${path}`, 3)
                 reject(err)
             } else {
+                log("STORE", `Successful read on ${path}`, 0)
                 resolve(JSON.parse(await fs.promises.readFile(path, "utf8")))
             }
         })
@@ -19,10 +22,19 @@ export function writeJSON(path, data) {
         let name = path.split("/")
         name = name[name.length-1]
         fs.access(path, fs.F_OK, async (err) => {
-            if (!err) await fs.promises.copyFile(path, `data/backups/${name}.${Date.now()}.bkp`)
+            if (!err) {
+                let backPath = `data/backups/${name}.${Date.now()}.bkp`
+                log("STORE", `Successful backup on ${path} to ${backPath}`, 0)
+                await fs.promises.copyFile(path, backPath)
+            }
             fs.writeFile(path, JSON.stringify(data), (err) => {
-                if (err) reject(err)
-                else resolve(err)
+                if (err) {
+                    log("STORE", `Failed read on ${path}`, 3)
+                    reject(err)
+                } else {
+                    log("STORE", `Successful write on ${path}`, 0)
+                    resolve(err)
+                }
             });
         });
     });
@@ -46,6 +58,7 @@ export function listJSON(path) {
                 let n = file.split(".")
                 if (n[n.length-1] == "json") fileList.push(file)
             }
+            log("STORE", `Successful list on ${path}`, 0)
             resolve(fileList)
         });
     });
@@ -80,4 +93,5 @@ export async function initialize() {
     } catch(err) {
         console.log(err);
     }
+    log("STORE", `Initialized`, 0)
 }
