@@ -41,7 +41,6 @@ class Group {
         this.schema = 2
         this.id = uuid()
         this.name = name || `Group ${this.id.substring(0,5)}`
-        this.devices = []
         this.slideshows = []
     }
 }
