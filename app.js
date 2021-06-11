@@ -32,6 +32,7 @@ class Server {
     constructor() {
         this.schema = 2
         this.id = uuid()
+        this.default_group = null
     }
 
     async initialize() {
@@ -80,7 +81,7 @@ async function createEndpoint(endpoint) {
             });
             break;
     }
-    log("MAIN", `Created ${endpoint.type} mapping ${endpoint.point} --> ${endpoint.path}`)
+    log("MAIN", `Created ${endpoint.type.toUpperCase()} mapping ${endpoint.point} --> ${endpoint.path}`)
 }
 
 app.listen(port, async () => {
@@ -92,6 +93,15 @@ app.listen(port, async () => {
             log("MAIN", "No server configuration", 2)
             let server = new Server()
             await server.initialize()
+
+            log("MAIN", "Creating default group")
+            let gp = await import("./modules/api/new/general.mjs") // a bit hacky, maybe find a better solution
+            let default_group = await gp.default({
+                "params": {"type":"group"},
+                "body":{"name":"Default"}
+            });
+            server.default_group = default_group.data
+
             await store.writeJSON("data/server.json", server);
             resolve(server);
         })

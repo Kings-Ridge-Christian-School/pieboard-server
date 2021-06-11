@@ -7,8 +7,8 @@ export default async function main(req) {
         }).catch((err) => resolve())
     })
 
-    if (!slideshow) return {"code": 200, "data": "SlideshowNoExistError"}
-    if (!slideshow.slides[req.params.slide]) return {"code": 200, "data": "SlideNoExistError"}
+    if (!slideshow) return {"code": 400, "data": "SlideshowNoExistError"}
+    if (!slideshow.slides[req.params.slide]) return {"code": 400, "data": "SlideNoExistError"}
 
     let slide = slideshow.slides[req.params.slide]
 

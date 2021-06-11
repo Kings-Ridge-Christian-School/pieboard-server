@@ -58,5 +58,29 @@
     "path":  "update",
     "type": "post",
     "auth":  true
+  },
+  {
+    "point": "/edit/device/:id",
+    "path": "edit/device",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/edit/group/:id",
+    "path": "edit/group",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/edit/slideshow/:id",
+    "path": "edit/slideshow",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/edit/slide/:slideshow/:id",
+    "path": "edit/slide",
+    "type": "post",
+    "auth": true
   }
 ]

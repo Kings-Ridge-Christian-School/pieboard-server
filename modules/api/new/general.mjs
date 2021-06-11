@@ -20,6 +20,7 @@ class Device {
         this.key = null
         this.ip = null
         this.state = 0
+        this.live_id = null
         this.manifest = {}
     }
 }

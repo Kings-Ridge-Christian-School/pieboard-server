@@ -63,12 +63,15 @@ async function writeDeviceState(id, manifest) {
     let reply = await sendDeviceCommand(data.ip, data.port, data.key,
         {"act": "put_manifest", "data": manifest})
 
+    data.manifest = manifest
+
     if (!reply) {
         log("PUSH", `Device ${id} is not connected properly!`, 2)
+        await store.writeJSON(`./data/devices/${device.id}.json`, data);
         return
     }
 
-    data.manifest = manifest
+    data.live_id = manifest.id
 
     log("PUSH", `Device ${id} was successfully updated`)
     await store.writeJSON(`./data/devices/${device.id}.json`, data);
