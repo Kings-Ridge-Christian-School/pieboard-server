@@ -18,87 +18,87 @@
     "auth":  false
   },
   {
-    "point": "/new/:type",
-    "path":  "new/general",
-    "type": "post",
-    "auth":  true
-  },
-  {
-    "point": "/new/slide/:slideshow",
-    "path":  "new/slide",
-    "type": "post",
-    "auth":  true
-  },
-  {
-    "point": "/read/slide/:slideshow/:slide",
-    "path":  "read/slide",
-    "type": "get",
-    "auth":  true
-  },
-  {
-    "point": "/read/:type/:id",
-    "path":  "read/general",
-    "type": "get",
-    "auth":  true
-  },
-  {
-    "point": "/list/:type",
-    "path":  "list/general",
-    "type": "get",
-    "auth":  true
-  },
-  {
-    "point": "/delete/slide/:slideshow/:slide",
-    "path":  "delete/slide",
-    "type": "post",
-    "auth":  true
-  },
-  {
-    "point": "/delete/slideshow/:id",
-    "path": "delete/slideshow",
-    "type": "post",
-    "auth": true
-  },
-  {
-    "point": "/delete/group/:id",
-    "path": "delete/group",
-    "type": "post",
-    "auth": true
-  },
-  {
-    "point": "/delete/device/:id",
-    "path": "delete/device",
-    "type": "post",
-    "auth": true
-  },
-  {
     "point": "/update",
     "path":  "update",
     "type": "post",
     "auth":  true
   },
   {
-    "point": "/edit/device/:id",
+    "point": "/:type",
+    "path": "list/general",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/:type",
+    "path": "new/general",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow",
+    "path": "new/slide",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/device/:id",
     "path": "edit/device",
     "type": "post",
     "auth": true
   },
   {
-    "point": "/edit/group/:id",
+    "point": "/group/:id",
     "path": "edit/group",
     "type": "post",
     "auth": true
   },
   {
-    "point": "/edit/slideshow/:id",
+    "point": "/slideshow/:id",
     "path": "edit/slideshow",
     "type": "post",
     "auth": true
   },
   {
-    "point": "/edit/slide/:slideshow/:id",
+    "point": "/device/:id",
+    "path": "delete/device",
+    "type": "delete",
+    "auth": true
+  },
+  {
+    "point": "/group/:id",
+    "path": "delete/group",
+    "type": "delete",
+    "auth": true
+  },
+  {
+    "point": "/slideshow/:id",
+    "path": "delete/slideshow",
+    "type": "delete",
+    "auth": true
+  },
+  {
+    "point": "/:type/:id",
+    "path": "read/general",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow/:id",
+    "path": "read/slide",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow/:id",
     "path": "edit/slide",
     "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow/:id",
+    "path": "delete/slide",
+    "type": "delete",
     "auth": true
   }
 ]
