@@ -43,9 +43,7 @@ class Server {
 
 async function createEndpoint(endpoint) {
     let ep = await import(`./modules/api/${endpoint.path}.mjs`)
-    switch (endpoint.type) {
-        case "get":
-            app.get(endpoint.point, async (req, res) => {
+            app[endpoint.type](endpoint.point, async (req, res) => {
                 if (endpoint.auth) {
                     if (!await auth.allowed(req)) {
                         res.status(403).send("Authentication Failed")
@@ -61,26 +59,6 @@ async function createEndpoint(endpoint) {
                 if (response.path) res.sendFile(__dirname + response.path)
                 else res.send(response.data)
             })
-            break;
-        case "post":
-            app.post(endpoint.point, async (req, res) => {
-                if (endpoint.auth) {
-                    if (!await auth.allowed(req)) {
-                        res.status(403).send("Authentication Failed")
-                        return
-                    }
-                }
-                let start = new Date()
-                let response = await ep.default(req)
-                res.set("Processing-Time", new Date() - start)
-                res.status(response.code)
-                if (response.headers) for (let header of Object.keys(response.headers)) res.header(header, response.headers[header])
-                if (response.type) res.type(response.type)
-                if (response.path) res.sendFile(__dirname + response.path)
-                else res.send(response.data)
-            });
-            break;
-    }
     log("MAIN", `Created ${endpoint.type.toUpperCase()} mapping ${endpoint.point} --> ${endpoint.path}`)
 }
 

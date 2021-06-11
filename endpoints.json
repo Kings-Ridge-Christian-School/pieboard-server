@@ -54,6 +54,24 @@
     "auth":  true
   },
   {
+    "point": "/delete/slideshow/:id",
+    "path": "delete/slideshow",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/delete/group/:id",
+    "path": "delete/group",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/delete/device/:id",
+    "path": "delete/device",
+    "type": "post",
+    "auth": true
+  },
+  {
     "point": "/update",
     "path":  "update",
     "type": "post",
