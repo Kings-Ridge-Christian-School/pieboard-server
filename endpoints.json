@@ -90,6 +90,12 @@
     "auth": true
   },
   {
+    "point": "/hash/:name",
+    "path": "read/hash",
+    "type": "get",
+    "auth": true
+  },
+  {
     "point": "/slide/:slideshow/:id",
     "path": "edit/slide",
     "type": "post",

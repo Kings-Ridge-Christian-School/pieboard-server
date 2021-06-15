@@ -21,32 +21,35 @@ async function fetchDeviceData(id) {
     })
 }
 
-async function sendDeviceCommand(ip, port, key, message) {
-    log("PUSH", `Device command to ${ip}:${port}`, 0)
+async function sendDeviceCommand(ip, key, message) {
+    log("PUSH", `Device command to ${ip}`, 0)
     let data = await new Promise(async(resolve) => {
-        fetch(`http://${ip}:${port}/client`, {
+        fetch(`http://${ip}:44172/client`, {
             "method": "post",
             headers: {'Content-Type': 'application/json'},
             timeout: 5000,
             body: JSON.stringify({
-                "msg": await crypto.encrypt(message, key)
+                "msg": await crypto.encrypt(JSON.stringify(message), key)
             })
         }).then((res) => res.text())
             .then(async body => await crypto.decrypt(body, key))
+            .then(out => resolve(out))
             .catch((err) => {
-                log("PUSH", `Device command to ${ip}:${port} failed`, 2);
+                console.log(err);
+                log("PUSH", `Device command to ${ip} failed`, 2);
                 resolve()
             })
     });
+    return data
 }
 
 export async function readDeviceState(id) {
     let data = await fetchDeviceData(id)
-    if (data.status != 2) {
+    if (data.state != 2) {
         log("PUSH", `Device ${id} is not in a ready state!`, 2)
         return
     }
-    let state = await sendDeviceCommand(data.ip, data.port, data.key, {"act": "get_status"})
+    let state = await sendDeviceCommand(data.ip, data.key, {"act": "get_status"})
 
     if (!state) log("PUSH", `Device ${id} is not connected properly!`, 2)
 
@@ -55,26 +58,25 @@ export async function readDeviceState(id) {
 
 async function writeDeviceState(id, manifest) {
     let data = await fetchDeviceData(id)
-    if (data.status != 2) {
+    if (data.state != 2) {
         log("PUSH", `Device ${id} is not in a ready state!`, 2)
         return
     }
-
-    let reply = await sendDeviceCommand(data.ip, data.port, data.key,
+    let reply = await sendDeviceCommand(data.ip, data.key,
         {"act": "put_manifest", "data": manifest})
 
     data.manifest = manifest
 
     if (!reply) {
         log("PUSH", `Device ${id} is not connected properly!`, 2)
-        await store.writeJSON(`./data/devices/${device.id}.json`, data);
+        await store.writeJSON(`./data/devices/${id}.json`, data);
         return
     }
 
     data.live_id = manifest.id
 
     log("PUSH", `Device ${id} was successfully updated`)
-    await store.writeJSON(`./data/devices/${device.id}.json`, data);
+    await store.writeJSON(`./data/devices/${id}.json`, data);
 
     return reply
 }

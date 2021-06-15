@@ -16,7 +16,6 @@ class Device {
         this.id = uuid()
         this.name = name || `Device ${this.id.substring(0,5)}`
         this.group = null
-        this.port = 3030
         this.key = null
         this.ip = null
         this.state = 0
@@ -58,6 +57,8 @@ export default async function main(req) {
             break;
         case "device":
             cl = new Device(req.body.name)
+            let server = await store.readJSON("data/server.json")
+            cl.group = server.default_group
             break;
         case "group":
             cl = new Group(req.body.name)

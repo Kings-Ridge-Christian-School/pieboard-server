@@ -2,6 +2,8 @@ import * as store from "./../../store.mjs"
 import {v4 as uuid} from "uuid";
 import fs from "fs";
 import log from "../../log.mjs";
+import imageThumbnail from 'image-thumbnail';
+import videoThumbnail from 'video-thumbnail-generator';
 
 /*
     if a file is uploaded, the mimetype is used by default, however defining a "type" overrides this
@@ -48,7 +50,7 @@ async function upload(file) {
             if (err) reject(err)
             else {
                 file.mv(endPath, (err) => {
-                    log("NEW", `Uploaded ${path}`, 0)
+                    log("NEW", `Uploaded ${endPath}`, 0)
                     if (err) reject(err)
                     else resolve({
                         "name": endName,
@@ -92,9 +94,26 @@ export default async function main(req) {
 
     switch(ftype) {
         case "image":
+            let image = await upload(req.files.upload)
+            let thumbnail = await imageThumbnail(image.path, {width: 250});
+            let thumbName = `${image.hash}_THUMB.${image.extension}`
+            await fs.promises.writeFile(`data/slides/${image.hash.substring(0,2)}/${thumbName}`, thumbnail)
+            slide = new Slide(req.body.name, image.hash, image.extension, ftype, req.body.volume)
+            break;
         case "video":
-            let file = await upload(req.files.upload)
-            slide = new Slide(req.body.name, file.hash, file.extension, ftype, req.body.volume)
+            let video = await upload(req.files.upload)
+            await new Promise((resolve) => {
+                const tg = new videoThumbnail.default({ // this is broken
+                    sourcePath: video.path,
+                    thumbnailPath: '/tmp/'
+                });
+                tg.generateOneByPercent(0).then((res) => {
+                    fs.rename(`/tmp/${res}`, `data/slides/${video.hash.substring(0,2)}/${video.hash}_THUMB.png`, (err) => {
+                        resolve()
+                    })
+                })
+            })
+            slide = new Slide(req.body.name, video.hash, video.extension, ftype, req.body.volume)
             break;
         case "youtube":
             if (!validUrl(req.body.url)) return {"code": 400, "data": "InvalidUrlError"}
