@@ -82,7 +82,9 @@ export default async function main(req) {
 
     if (!slideshow)  return {"code": 400, "data": "SlideshowNoExistError"}
 
-    if (!req.files.upload && req.body.url == null) return {"code": 400, "data": "NoFileError"}
+    if (!req.files && req.body.url == null) return {"code": 400, "data": "NoFileError"}
+
+    if (req.files) if (!req.files.upload) return {"code": 400, "data": "NoFileError"}
 
     let ftype = req.body.type || req.files.upload.mimetype.split("/")[0]
 
