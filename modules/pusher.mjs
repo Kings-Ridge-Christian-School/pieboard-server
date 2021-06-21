@@ -21,13 +21,13 @@ async function fetchDeviceData(id) {
     })
 }
 
-async function sendDeviceCommand(ip, key, message) {
+export async function sendDeviceCommand(ip, key, message, timeout) {
     log("PUSH", `Device command to ${ip}`, 0)
     let data = await new Promise(async(resolve) => {
         fetch(`http://${ip}:44172/client`, {
             "method": "post",
             headers: {'Content-Type': 'application/json'},
-            timeout: 5000,
+            timeout: timeout || 5000,
             body: JSON.stringify({
                 "msg": await crypto.encrypt(JSON.stringify(message), key)
             })
@@ -49,7 +49,7 @@ export async function readDeviceState(id) {
         log("PUSH", `Device ${id} is not in a ready state!`, 2)
         return
     }
-    let state = await sendDeviceCommand(data.ip, data.key, {"act": "get_status"})
+    let state = await sendDeviceCommand(data.ip, data.key, {"act": "get_status"}, 10000)
 
     if (!state) log("PUSH", `Device ${id} is not connected properly!`, 2)
 

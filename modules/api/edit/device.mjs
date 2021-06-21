@@ -77,7 +77,15 @@ export default async function main(req) {
                     break
                 default:
                     return {"code": 400, "data": "DeviceAlreadyConfiguredError"}
+                    break
             }
+            break;
+        case "update":
+            return {"code": 200, "data": await pusher.sendDeviceCommand(data.ip, data.key, {"act": "run_update"})}
+            break;
+        case "reboot":
+            return {"code": 200, "data": await pusher.sendDeviceCommand(data.ip, data.key, {"act": "run_reboot"})}
+            break;
     }
 
     log("EDIT", `Edited ${req.body.change} in device ${req.params.id}`)

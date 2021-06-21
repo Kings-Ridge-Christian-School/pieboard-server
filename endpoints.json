@@ -36,6 +36,12 @@
     "auth": true
   },
   {
+    "point": "/state/:device",
+    "path": "read/state",
+    "type": "get",
+    "auth": true
+  },
+  {
     "point": "/:type",
     "path": "new/general",
     "type": "post",
