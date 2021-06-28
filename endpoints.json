@@ -33,7 +33,7 @@
     "point": "/hash/:name",
     "path": "read/hash",
     "type": "get",
-    "auth": true
+    "auth": false
   },
   {
     "point": "/state/:device",
@@ -96,19 +96,19 @@
     "auth": true
   },
   {
-    "point": "/slide/:slideshow/:id",
+    "point": "/slide/:slideshow/:slide",
     "path": "read/slide",
     "type": "get",
     "auth": true
   },
   {
-    "point": "/slide/:slideshow/:id",
+    "point": "/slide/:slideshow/:slide",
     "path": "edit/slide",
     "type": "post",
     "auth": true
   },
   {
-    "point": "/slide/:slideshow/:id",
+    "point": "/slide/:slideshow/:slide",
     "path": "delete/slide",
     "type": "delete",
     "auth": true

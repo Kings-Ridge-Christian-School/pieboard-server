@@ -37,7 +37,7 @@ export default async function main(req) {
             slide.screentime = req.body.value
             break;
         case "volume":
-            if (!["youtube", "live"].includes(slide.type)) return {"code": 400, "data": "SideNotCorrectTypeError"}
+            if (!["youtube", "live", "video"].includes(slide.type)) return {"code": 400, "data": "SideNotCorrectTypeError"}
             if (isNaN(req.body.value)) return {"code": 400, "data": "DataFormatError"}
             slide.volume = req.body.value
             break;

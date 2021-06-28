@@ -14,6 +14,8 @@ export default async function main(req) {
         }).catch((err) => resolve())
     })
 
+    if (req.params.id == server.default_group) return {"code": 400, "data": "GroupCannotDeleteDefault"}
+
     if (!slideshow) return {"code": 400, "data": "GroupNoExistError"}
 
     let devices = await store.listJSON("./data/devices")

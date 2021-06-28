@@ -73,7 +73,10 @@ async function writeDeviceState(id, manifest) {
         return
     }
 
-    data.live_id = manifest.id
+    data.live_id = {
+        "id": manifest.id,
+        "created": manifest.created
+    }
 
     log("PUSH", `Device ${id} was successfully updated`)
     await store.writeJSON(`./data/devices/${id}.json`, data);

@@ -41,6 +41,8 @@ export async function allowed(req) {
 
     let info = keys[req.body.auth] || keys[req.query.auth] || keys[req.get("Authorization")]
 
+    if (!info) return false
+
     if (info.last/1 > new Date()/1-VALID_TIME) {
         info.last = new Date()
         return true

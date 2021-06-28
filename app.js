@@ -3,6 +3,7 @@ import fs from 'fs'
 const app = express()
 import bodyParser from 'body-parser'
 import fileUpload from 'express-fileupload'
+import cors from 'cors'
 import { v4 as uuid } from 'uuid';
 import dotenv from 'dotenv'
 dotenv.config()
@@ -13,7 +14,13 @@ import * as crypto from "./modules/crypto.mjs"
 import log from "./modules/log.mjs"
 import {reqLog} from './modules/log.mjs'
 
-app.use(fileUpload())
+app.use(fileUpload({
+        limits: {fileSize: 1024 * 1024 * 1024},
+        useTempFiles: true,
+        tempFileDir: "/tmp/"
+    }
+))
+app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 

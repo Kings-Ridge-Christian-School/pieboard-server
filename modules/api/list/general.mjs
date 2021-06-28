@@ -10,5 +10,15 @@ export default async function main(req) {
 
     list = list.map(x => x.split(".")[0])
 
-    return {"code": 200, "data": list}
+    let finalList = []
+
+    for (let item of list) {
+        let data = await store.readJSON(`./data/${req.params.type}s/${item}.json`)
+        finalList.push({
+            "id": item,
+            "name": data.name
+        })
+    }
+
+    return {"code": 200, "data": finalList}
 }
