@@ -29,7 +29,7 @@ export default async function main(req) {
         }
     }
 
-    await store.deleteJSON(`./data/slideshows/${req.params.slideshow}.json`)
+    await store.deleteJSON(`./data/groups/${req.params.id}.json`)
 
     log("DEL", `Deleted slideshow ${req.params.id}`)
 

@@ -4,6 +4,9 @@ import fs from "fs";
 import log from "../../log.mjs";
 import imageThumbnail from 'image-thumbnail';
 import videoThumbnail from 'video-thumbnail-generator';
+import gmIn from 'gm';
+
+const gm = gmIn.subClass({imageMagick: true});
 
 /*
     if a file is uploaded, the mimetype is used by default, however defining a "type" overrides this
@@ -97,6 +100,12 @@ export default async function main(req) {
     switch(ftype) {
         case "image":
             let image = await upload(req.files.upload)
+            await new Promise((resolve) => {
+                gm(image.path).gravity('Center').background('black').resize(1920, 1080).extent(1920, 1080).write(image.path, (err) => {
+                    if (err) console.log(err)
+                    resolve()
+                })
+            });
             let thumbnail = await imageThumbnail(image.path, {width: 250});
             let thumbName = `${image.hash}_THUMB.${image.extension}`
             await fs.promises.writeFile(`data/slides/${image.hash.substring(0,2)}/${thumbName}`, thumbnail)

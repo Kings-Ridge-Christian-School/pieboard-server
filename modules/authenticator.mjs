@@ -20,6 +20,7 @@ export let keys = {}
 export function verifyDetails(username, password) {
     return new Promise(async (resolve) => {
         ad.authenticate(username, password, (err, auth) => {
+            if (err) log("AUTH", err, 3)
             auth ? resolve(true) : resolve(false)
         });
     });
