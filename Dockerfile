@@ -1,6 +1,8 @@
-FROM node:12
+FROM node:14-alpine
 
 WORKDIR /usr/src/app
+
+RUN apk add --no-cache ffmpeg imagemagick
 
 COPY package*.json ./
 
