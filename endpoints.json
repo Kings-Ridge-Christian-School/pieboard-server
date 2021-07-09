@@ -42,6 +42,12 @@
     "auth": true
   },
   {
+    "point": "/manifest/:device",
+    "path": "read/manifest",
+    "type": "get",
+    "auth": true
+  },
+  {
     "point": "/:type",
     "path": "new/general",
     "type": "post",
