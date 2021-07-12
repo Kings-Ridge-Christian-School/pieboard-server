@@ -1,12 +1,15 @@
-const fs = require('fs')
-const objectPath = require('object-path')
+import fs from 'fs'
+import objectPath from 'object-path'
+import log from "./log.mjs";
 
-function readJSON(path) {
+export function readJSON(path) {
     return new Promise((resolve, reject) => {
         fs.access(path, fs.F_OK, async (err) => {
             if (err) {
+                log("STORE", `Failed read on ${path}`, 3)
                 reject(err)
             } else {
+                log("STORE", `Successful read on ${path}`, 0)
                 resolve(JSON.parse(await fs.promises.readFile(path, "utf8")))
             }
         })
@@ -14,21 +17,30 @@ function readJSON(path) {
 }
 
 
-function writeJSON(path, data) {
+export function writeJSON(path, data) {
     return new Promise(async (resolve, reject) => {
         let name = path.split("/")
         name = name[name.length-1]
         fs.access(path, fs.F_OK, async (err) => {
-            if (!err) await fs.promises.copyFile(path, `data/backups/${name}.${Date.now()}.bkp`)
+            if (!err) {
+                let backPath = `data/backups/${name}.${Date.now()}.bkp`
+                log("STORE", `Successful backup on ${path} to ${backPath}`, 0)
+                await fs.promises.copyFile(path, backPath)
+            }
             fs.writeFile(path, JSON.stringify(data), (err) => {
-                if (err) reject(err)
-                else resolve(err)
+                if (err) {
+                    log("STORE", `Failed read on ${path}`, 3)
+                    reject(err)
+                } else {
+                    log("STORE", `Successful write on ${path}`, 0)
+                    resolve(err)
+                }
             });
         });
     });
 }
 
-function deleteJSON(path) { // seems to be a general delete function, may be moved to fileHandler
+export function deleteJSON(path) { // seems to be a general delete function, may be moved to fileHandler
     return new Promise(async (resolve, reject) => {
         fs.unlink(path, (err) => {
             if (err) reject(err)
@@ -37,7 +49,7 @@ function deleteJSON(path) { // seems to be a general delete function, may be mov
     });
 }
 
-function listJSON(path) {
+export function listJSON(path) {
     return new Promise(async (resolve, reject) => {
         let fileList = []
         fs.readdir(path, (err, files) => {
@@ -46,18 +58,19 @@ function listJSON(path) {
                 let n = file.split(".")
                 if (n[n.length-1] == "json") fileList.push(file)
             }
+            log("STORE", `Successful list on ${path}`, 0)
             resolve(fileList)
         });
     });
 }
 
-async function updateValue(path, location, value) {
-        let input = await readJSON(path)
-        objectPath.set(input, location, value)
-        await writeJSON(path, input)
+export async function updateValue(path, location, value) {
+    let input = await readJSON(path)
+    objectPath.set(input, location, value)
+    await writeJSON(path, input)
 }
 
-async function getList(path, keys) {
+export async function getList(path, keys) {
     let input = await listJSON(path)
     let output = []
     for (let piece of input) {
@@ -70,7 +83,7 @@ async function getList(path, keys) {
 }
 
 
-async function initialize() {
+export async function initialize() {
     try {
         fs.mkdir("data/slideshows", {recursive:true}, (err) => {});
         fs.mkdir("data/devices",{recursive:true}, (err) => {})
@@ -80,11 +93,5 @@ async function initialize() {
     } catch(err) {
         console.log(err);
     }
+    log("STORE", `Initialized`, 0)
 }
-exports.readJSON = readJSON
-exports.writeJSON = writeJSON
-exports.deleteJSON = deleteJSON
-exports.listJSON = listJSON
-exports.initialize = initialize
-exports.updateValue = updateValue
-exports.getList = getList

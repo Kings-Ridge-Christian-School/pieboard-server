@@ -1,0 +1,15 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: docker
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: username
+      password:
+        from_secret: password
+      repo: registry.holliger.me/kings-ridge-christian-school/pieboard-server
+      registry: registry.holliger.me

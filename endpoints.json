@@ -1,0 +1,122 @@
+[
+  {
+    "point": "/login",
+    "path":  "login",
+    "type": "post",
+    "auth":  false
+  },
+  {
+    "point": "/verify",
+    "path":  "verify",
+    "type": "get",
+    "auth":  true
+  },
+  {
+    "point": "/client",
+    "path":  "client",
+    "type": "post",
+    "auth":  false
+  },
+  {
+    "point": "/update",
+    "path":  "update",
+    "type": "post",
+    "auth":  true
+  },
+  {
+    "point": "/:type",
+    "path": "list/general",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/hash/:name",
+    "path": "read/hash",
+    "type": "get",
+    "auth": false
+  },
+  {
+    "point": "/state/:device",
+    "path": "read/state",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/manifest/:device",
+    "path": "read/manifest",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/:type",
+    "path": "new/general",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow",
+    "path": "new/slide",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/device/:id",
+    "path": "edit/device",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/group/:id",
+    "path": "edit/group",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/slideshow/:id",
+    "path": "edit/slideshow",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/device/:id",
+    "path": "delete/device",
+    "type": "delete",
+    "auth": true
+  },
+  {
+    "point": "/group/:id",
+    "path": "delete/group",
+    "type": "delete",
+    "auth": true
+  },
+  {
+    "point": "/slideshow/:id",
+    "path": "delete/slideshow",
+    "type": "delete",
+    "auth": true
+  },
+  {
+    "point": "/:type/:id",
+    "path": "read/general",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow/:slide",
+    "path": "read/slide",
+    "type": "get",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow/:slide",
+    "path": "edit/slide",
+    "type": "post",
+    "auth": true
+  },
+  {
+    "point": "/slide/:slideshow/:slide",
+    "path": "delete/slide",
+    "type": "delete",
+    "auth": true
+  }
+]
