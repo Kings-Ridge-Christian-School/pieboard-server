@@ -18,6 +18,7 @@ let ad;
 export let keys = {}
 
 export function verifyDetails(username, password) {
+    log("AUTH", `verifying details for ${username}`, 0)
     return new Promise(async (resolve) => {
         ad.authenticate(username, password, (err, auth) => {
             if (err) log("AUTH", err, 3)
@@ -27,8 +28,10 @@ export function verifyDetails(username, password) {
 }
 
 export function inGroup(username) {
+    log("AUTH", `verifying group permissions for ${username}`, 0)
     return new Promise(async (resolve) => {
             ad.isUserMemberOf(username, authGroup, (err, auth) => {
+                if (err) log("AUTH", err, 3)
                 if (auth) {
                     resolve(true)
                 } else resolve(false)
