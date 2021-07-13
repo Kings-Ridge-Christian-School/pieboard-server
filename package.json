@@ -15,7 +15,7 @@
   "author": "Lukas Holliger",
   "license": "MIT",
   "dependencies": {
-    "activedirectory": "^0.7.2",
+    "activedirectory2": "^2.1.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.4",
     "cors": "^2.8.5",

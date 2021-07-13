@@ -1,4 +1,4 @@
-import ActiveDirectory from 'activedirectory'
+import ActiveDirectory from 'activedirectory2'
 import log from "./log.mjs"
 import dotenv from 'dotenv'
 dotenv.config()

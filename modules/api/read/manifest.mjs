@@ -9,5 +9,7 @@ export default async function main(req) {
 
     if (!device) return {"code": 400, "data": "DeviceNoExistError"}
 
+    if (device.state != 2) return {"code": 400, "data": "DeviceNotConfiguredError"}
+
     return {"code": 200, "data": await pusher.sendDeviceCommand(device.ip, device.key, {"act": "get_manifest"})}
 }
