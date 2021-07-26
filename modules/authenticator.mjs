@@ -56,6 +56,12 @@ export async function allowed(req) {
 
 export async function initialize() {
     ad = new ActiveDirectory(config);
+    let a = await verifyDetails(config.username, config.password)
+    if (a) {
+        log("AUTH", `Verified ${config.username} as a valid user`, 0)
+    } else {
+        log("AUTH", `Could not verify ${config.username} as a valid user`, 2)
+    }
     if (process.env.BYPASS_AUTHENTICATION == "true") log("AUTH", "Authentication disabled!", 2)
     log("AUTH", "Initialized", 0)
 }

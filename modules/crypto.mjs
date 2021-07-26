@@ -7,8 +7,8 @@ export async function getKeypair(name) {
     let keys = await openpgp.generateKey({curve: "ed25519", userIDs: [{"name": name}]})
     log("CRYPTO", `Generated keypair for ${name}`, 0)
     return {
-        "private": keys.privateKeyArmored,
-        "public": keys.publicKeyArmored,
+        "private": keys.privateKey,
+        "public": keys.publicKey,
         "revocation": keys.revocationCertificate
     }
 }
@@ -39,7 +39,7 @@ export async function decrypt(message, recvKey) {
         decryptionKeys: await openpgp.readKey({ armoredKey: keys.private })
     });
 
-    if (!out.signatures[0].valid) log("CRYPTO", `Message is not validly signed!`, 2)
+    if (!await out.signatures[0].verified) log("CRYPTO", `Message is not validly signed!`, 2)
 
     return out.data
 }
